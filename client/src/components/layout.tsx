@@ -109,12 +109,6 @@ export default function Layout({ children }: { children: ReactNode }) {
                   ))}
                 </nav>
                 <div className="p-4 border-t space-y-2">
-                  <Link href="/profile">
-                    <div className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100">
-                      <User className="w-4 h-4" />
-                      Profile
-                    </div>
-                  </Link>
                   <Button variant="ghost" className="w-full justify-start" onClick={logout}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Log out
