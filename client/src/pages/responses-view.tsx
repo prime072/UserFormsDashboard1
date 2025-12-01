@@ -15,13 +15,12 @@ export default function ResponsesView() {
   const [match, params] = useRoute("/forms/:id/responses");
   const { toast } = useToast();
   const { getForm, getFormResponses, updateResponse, deleteResponse } = useForms();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editData, setEditData] = useState<Record<string, any>>({});
 
   const formId = params?.id;
   const form = formId ? getForm(formId) : undefined;
   const formResponses = formId ? getFormResponses(formId) : [];
-
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editData, setEditData] = useState<Record<string, any>>({});
 
   if (!form) {
     return (

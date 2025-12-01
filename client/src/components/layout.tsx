@@ -7,7 +7,8 @@ import {
   Settings, 
   LogOut, 
   Plus,
-  Menu
+  Menu,
+  BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -20,6 +21,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/forms", label: "My Forms", icon: FileText },
+    { href: "/responses", label: "Responses", icon: BarChart3 },
     { href: "/settings", label: "Settings", icon: Settings },
   ];
 
