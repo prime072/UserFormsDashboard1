@@ -13,6 +13,8 @@ import SubmissionConfirmation from "@/pages/submission-confirmation";
 import ResponsesView from "@/pages/responses-view";
 import ResponsesAnalytics from "@/pages/responses-analytics";
 import ResponsesDashboard from "@/pages/responses-dashboard";
+import AdminLogin from "@/pages/admin-login";
+import AdminDashboard from "@/pages/admin-dashboard";
 import { ReactNode } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -23,6 +25,18 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
   if (!user) {
     setLocation("/auth");
+    return null;
+  }
+
+  return <Component />;
+}
+
+function AdminProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  const [, setLocation] = useLocation();
+  const adminSession = localStorage.getItem("admin_session");
+
+  if (!adminSession) {
+    setLocation("/admin/login");
     return null;
   }
 
@@ -53,6 +67,12 @@ function Router() {
       </Route>
       <Route path="/forms">
         <ProtectedRoute component={Dashboard} />
+      </Route>
+
+      {/* Admin Routes */}
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/dashboard">
+        <AdminProtectedRoute component={AdminDashboard} />
       </Route>
       
       {/* Public Route - No Protection needed */}
