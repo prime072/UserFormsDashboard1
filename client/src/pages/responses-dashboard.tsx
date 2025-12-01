@@ -6,16 +6,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, MessageSquare, Users, TrendingUp, Search } from "lucide-react";
+import { Download, MessageSquare, Users, TrendingUp, Search, Edit, Trash2, Save, X } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 
 export default function ResponsesDashboard() {
-  const { forms, responses, getForm } = useForms();
+  const { forms, responses, getForm, updateResponse, deleteResponse } = useForms();
   const { toast } = useToast();
   const [selectedForm, setSelectedForm] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editData, setEditData] = useState<Record<string, any>>({});
 
   const filteredResponses = useMemo(() => {
     let result = responses;
@@ -81,6 +83,31 @@ export default function ResponsesDashboard() {
       title: "Export Successful",
       description: "Responses exported to Excel",
     });
+  };
+
+  const handleEdit = (responseId: string, data: Record<string, any>) => {
+    setEditingId(responseId);
+    setEditData({ ...data });
+  };
+
+  const handleSaveEdit = (responseId: string) => {
+    updateResponse(responseId, editData);
+    setEditingId(null);
+    toast({
+      title: "Response Updated",
+      description: "The response has been updated successfully.",
+    });
+  };
+
+  const handleDeleteResponse = (responseId: string) => {
+    if (confirm("Are you sure you want to delete this response?")) {
+      deleteResponse(responseId);
+      toast({
+        title: "Response Deleted",
+        description: "The response has been removed.",
+        variant: "destructive"
+      });
+    }
   };
 
   const COLORS = ['#4F46E5', '#7C3AED', '#06B6D4', '#10B981', '#F59E0B', '#EF4444'];
@@ -280,24 +307,89 @@ export default function ResponsesDashboard() {
                     <TableRow>
                       <TableHead>Form</TableHead>
                       <TableHead>Submitted</TableHead>
-                      <TableHead>Data</TableHead>
+                      <TableHead>Response Data</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredResponses.slice(0, 20).map(response => {
                       const form = getForm(response.formId);
+                      const isEditing = editingId === response.id;
                       return (
                         <TableRow key={response.id}>
                           <TableCell className="font-medium">{form?.title || 'Unknown'}</TableCell>
                           <TableCell className="text-sm text-slate-500">
                             {new Date(response.submittedAt).toLocaleString()}
                           </TableCell>
-                          <TableCell className="text-sm">
-                            <div className="max-w-xs truncate bg-slate-50 p-2 rounded text-slate-700">
-                              {Object.entries(response.data)
-                                .map(([key, val]) => `${key}: ${val}`)
-                                .join(" | ")}
-                            </div>
+                          <TableCell className="text-sm max-w-lg">
+                            {isEditing ? (
+                              <div className="space-y-2 max-h-48 overflow-y-auto">
+                                {Object.entries(editData).map(([key, value]) => (
+                                  key !== 'id' && key !== 'submittedAt' && (
+                                    <div key={key} className="flex gap-2">
+                                      <span className="text-xs font-medium text-slate-600 min-w-max">{key}:</span>
+                                      <Input
+                                        value={value || ""}
+                                        onChange={(e) => setEditData({ ...editData, [key]: e.target.value })}
+                                        className="text-sm"
+                                        data-testid={`input-edit-${key}`}
+                                      />
+                                    </div>
+                                  )
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="bg-slate-50 p-2 rounded text-slate-700 text-xs">
+                                {Object.entries(response.data)
+                                  .filter(([k]) => k !== 'id' && k !== 'submittedAt')
+                                  .map(([key, val]) => `${key}: ${val}`)
+                                  .join(" • ")}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {isEditing ? (
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSaveEdit(response.id)}
+                                  className="gap-1"
+                                  data-testid="button-save-response"
+                                >
+                                  <Save className="w-3 h-3" /> Save
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingId(null)}
+                                  className="gap-1"
+                                  data-testid="button-cancel-edit"
+                                >
+                                  <X className="w-3 h-3" /> Cancel
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleEdit(response.id, response.data)}
+                                  className="gap-1"
+                                  data-testid="button-edit-response"
+                                >
+                                  <Edit className="w-3 h-3" /> Edit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDeleteResponse(response.id)}
+                                  className="gap-1 text-red-600 hover:text-red-700"
+                                  data-testid="button-delete-response"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Delete
+                                </Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
                       );
