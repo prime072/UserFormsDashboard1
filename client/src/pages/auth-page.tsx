@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import generatedImage from "@assets/generated_images/abstract_geometric_shapes_in_blue_and_indigo_on_white_background.png";
 import { motion } from "framer-motion";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Shield, AlertCircle } from "lucide-react";
 
 const loginSchema = z.object({
@@ -148,6 +148,17 @@ export default function AuthPage() {
                     <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading ? "Signing in..." : "Sign In"}
                     </Button>
+                    <div className="text-center pt-2">
+                      <Link href="/forgot-password">
+                        <button 
+                          type="button"
+                          className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                          data-testid="button-forgot-password"
+                        >
+                          Forgot Password?
+                        </button>
+                      </Link>
+                    </div>
                   </form>
                 </Form>
               </TabsContent>

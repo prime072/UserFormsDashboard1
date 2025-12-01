@@ -19,6 +19,8 @@ import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import Profile from "@/pages/profile";
 import Settings from "@/pages/settings";
+import ForgotPassword from "@/pages/forgot-password";
+import VerifyEmail from "@/pages/verify-email";
 import { ReactNode } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -55,6 +57,8 @@ function Router() {
     <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/verify-email/:token" component={VerifyEmail} />
       <Route path="/dashboard">
         <ProtectedRoute component={Dashboard} />
       </Route>
