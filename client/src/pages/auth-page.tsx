@@ -35,11 +35,8 @@ export default function AuthPage() {
   async function onSubmit(values: z.infer<typeof authSchema>) {
     setIsLoading(true);
     clearAuthError();
-    // Simulate API call
-    setTimeout(() => {
-      login(values.email);
-      setIsLoading(false);
-    }, 1000);
+    await login(values.email);
+    setIsLoading(false);
   }
 
   return (

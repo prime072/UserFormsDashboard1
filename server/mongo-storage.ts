@@ -4,10 +4,17 @@ import { type IStorage } from "./storage";
 
 // MongoDB Schemas
 const userSchema = new mongoose.Schema({
-  _id: String,
-  id: String,
-  username: { type: String, unique: true, required: true },
+  id: { type: String, unique: true, required: true },
+  email: { type: String, unique: true, required: true },
+  firstName: String,
+  lastName: String,
+  phone: String,
+  company: String,
+  photo: String,
   password: String,
+  username: String,
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 });
 
 const formSchema = new mongoose.Schema({
@@ -63,7 +70,27 @@ export class MongoDBStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     await this.connect();
-    const doc = await UserModel.findOne({ username }).lean();
+    const doc = await UserModel.findOne({ $or: [{ username }, { email: username }] }).lean();
+    if (!doc) return undefined;
+    const { _id, ...rest } = doc as any;
+    return rest as User;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    await this.connect();
+    const doc = await UserModel.findOne({ email }).lean();
+    if (!doc) return undefined;
+    const { _id, ...rest } = doc as any;
+    return rest as User;
+  }
+
+  async updateUser(id: string, updates: any): Promise<User | undefined> {
+    await this.connect();
+    const doc = await UserModel.findOneAndUpdate(
+      { id },
+      { ...updates, updatedAt: new Date() },
+      { new: true }
+    ).lean();
     if (!doc) return undefined;
     const { _id, ...rest } = doc as any;
     return rest as User;
@@ -72,7 +99,20 @@ export class MongoDBStorage implements IStorage {
   async createUser(user: InsertUser): Promise<User> {
     await this.connect();
     const id = Math.random().toString(36).substr(2, 9);
-    const newUser = { id, ...user };
+    const email = (user as any).email || (user as any).username;
+    const firstName = email?.split("@")[0] || "";
+    const newUser = {
+      id,
+      email,
+      firstName,
+      lastName: "",
+      phone: "",
+      company: "",
+      photo: "",
+      ...user,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
     const doc = await UserModel.create(newUser);
     const { _id, ...rest } = doc.toObject() as any;
     return rest as User;
