@@ -96,4 +96,9 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+// Use MongoDB if MONGODB_URI is set, otherwise use PostgreSQL
+import { mongoStorage } from "./mongo-storage";
+
+const storage = process.env.MONGODB_URI ? mongoStorage : new DatabaseStorage();
+
+export { storage };
