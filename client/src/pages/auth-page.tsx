@@ -15,34 +15,49 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { Shield, AlertCircle } from "lucide-react";
 
-const authSchema = z.object({
+const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email"),
+  password: z.string().min(1, "Password is required"),
+});
+
+const signupSchema = z.object({
   email: z.string().email("Please enter a valid email"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().min(1, "First name is required"),
 });
 
 export default function AuthPage() {
   const { login, signup, authError, clearAuthError } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof authSchema>>({
-    resolver: zodResolver(authSchema),
+  const loginForm = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
     },
   });
 
-  async function onLoginSubmit(values: z.infer<typeof authSchema>) {
+  const signupForm = useForm<z.infer<typeof signupSchema>>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      firstName: "",
+    },
+  });
+
+  async function onLoginSubmit(values: z.infer<typeof loginSchema>) {
     setIsLoading(true);
     clearAuthError();
-    await login(values.email);
+    await login(values.email, values.password);
     setIsLoading(false);
   }
 
-  async function onSignupSubmit(values: z.infer<typeof authSchema>) {
+  async function onSignupSubmit(values: z.infer<typeof signupSchema>) {
     setIsLoading(true);
     clearAuthError();
-    await signup(values.email);
+    await signup(values.email, values.password, values.firstName);
     setIsLoading(false);
   }
 

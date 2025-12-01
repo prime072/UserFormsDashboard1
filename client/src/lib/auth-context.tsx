@@ -13,14 +13,13 @@ export type User = {
 
 type AuthContextType = {
   user: User | null;
-  login: (email: string) => Promise<void>;
-  signup: (email: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, firstName: string) => Promise<void>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => Promise<void>;
   isLoading: boolean;
   authError: string | null;
   clearAuthError: () => void;
-  checkEmailExists: (email: string) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -40,26 +39,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const checkEmailExists = async (email: string): Promise<boolean> => {
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
-  };
-
-  const signup = async (email: string) => {
+  const signup = async (email: string, password: string, firstName: string) => {
     try {
       setAuthError(null);
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, password, firstName }),
       });
 
       if (response.status === 409) {
@@ -69,7 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (!response.ok) {
-        throw new Error("Signup failed");
+        const error = await response.json();
+        setAuthError(error.error || "Signup failed");
+        return;
       }
 
       const newUser = await response.json();
@@ -82,17 +70,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (email: string) => {
+  const login = async (email: string, password: string) => {
     try {
       setAuthError(null);
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, password }),
       });
 
       if (!response.ok) {
-        throw new Error("Login failed");
+        const error = await response.json();
+        setAuthError(error.error || "Login failed");
+        return;
       }
 
       const user = await response.json();
@@ -137,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, updateUser, isLoading, authError, clearAuthError: () => setAuthError(null), checkEmailExists }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, updateUser, isLoading, authError, clearAuthError: () => setAuthError(null) }}>
       {children}
     </AuthContext.Provider>
   );

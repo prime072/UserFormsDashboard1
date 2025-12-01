@@ -1,32 +1,38 @@
 import { type Express } from "express";
 import { storage } from "./storage";
 import { z } from "zod";
+import bcrypt from "bcrypt";
 
 const signupSchema = z.object({
   email: z.string().email(),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().min(1, "First name is required"),
 });
 
 const loginSchema = z.object({
   email: z.string().email(),
+  password: z.string().min(1, "Password is required"),
 });
 
 export function registerAuthRoutes(app: Express) {
   // Sign up / Register
   app.post("/api/auth/signup", async (req, res) => {
     try {
-      const { email } = signupSchema.parse(req.body);
+      const { email, password, firstName } = signupSchema.parse(req.body);
 
       // Check if user already exists by email
-      const existingUser = await (storage as any).getUserByEmail?.(email) || 
-                          await (storage as any).getUserByUsername?.(email);
+      const existingUser = await (storage as any).getUserByEmail?.(email);
       if (existingUser) {
         return res.status(409).json({ 
-          error: "This email is already registered. Please log in or use a different email." 
+          error: "This email is already registered. Please log in." 
         });
       }
 
+      // Hash password
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
       // Create new user with MongoDB storage
-      const firstName = email.split("@")[0];
       const newUser = await storage.createUser({
         email,
         username: email,
@@ -35,12 +41,21 @@ export function registerAuthRoutes(app: Express) {
         phone: "",
         company: "",
         photo: "",
+        password: hashedPassword,
       } as any);
 
-      res.status(201).json(newUser);
+      res.status(201).json({
+        id: newUser.id,
+        email: newUser.email,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        phone: newUser.phone,
+        company: newUser.company,
+        photo: newUser.photo,
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
+        return res.status(400).json({ error: error.errors[0]?.message || "Validation error" });
       }
       console.error("Signup error:", error);
       res.status(500).json({ error: "Signup failed" });
@@ -50,29 +65,33 @@ export function registerAuthRoutes(app: Express) {
   // Login
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { email } = loginSchema.parse(req.body);
+      const { email, password } = loginSchema.parse(req.body);
 
-      // Find user by email or create if doesn't exist
-      let user = await (storage as any).getUserByEmail?.(email);
+      // Find user by email only
+      const user = await (storage as any).getUserByEmail?.(email);
       
       if (!user) {
-        // Auto-create user on login (flexible login)
-        const firstName = email.split("@")[0];
-        user = await storage.createUser({
-          email,
-          username: email,
-          firstName,
-          lastName: "",
-          phone: "",
-          company: "",
-          photo: "",
-        } as any);
+        return res.status(401).json({ error: "Invalid email or password" });
       }
 
-      res.json(user);
+      // Verify password
+      const passwordMatch = await bcrypt.compare(password, (user as any).password || "");
+      if (!passwordMatch) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+
+      res.json({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        company: user.company,
+        photo: user.photo,
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
+        return res.status(400).json({ error: error.errors[0]?.message || "Validation error" });
       }
       console.error("Login error:", error);
       res.status(500).json({ error: "Login failed" });
