@@ -28,13 +28,13 @@ export default function Layout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50/50 flex">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-slate-950 flex">
       {/* Sidebar Desktop */}
-      <aside className="hidden md:flex w-64 flex-col bg-white border-r h-screen sticky top-0">
-        <div className="p-6 border-b">
+      <aside className="hidden md:flex w-64 flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 h-screen sticky top-0">
+        <div className="p-6 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">F</div>
-            <span className="text-xl font-display font-bold text-slate-900">FormFlow</span>
+            <span className="text-xl font-display font-bold text-slate-900 dark:text-white">FormFlow</span>
           </div>
         </div>
         
@@ -45,8 +45,8 @@ export default function Layout({ children }: { children: ReactNode }) {
               <Link key={item.href} href={item.href}>
                 <a className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   isActive 
-                    ? "bg-primary/10 text-primary" 
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    ? "bg-primary/10 text-primary dark:bg-primary/20" 
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
                 }`}>
                   <item.icon className="w-4 h-4" />
                   {item.label}
@@ -56,7 +56,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4 border-t space-y-2">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
           <div className="flex items-center gap-3 mb-4 px-2">
             <Avatar className="h-8 w-8">
               {user?.photo ? (
@@ -68,11 +68,11 @@ export default function Layout({ children }: { children: ReactNode }) {
               )}
             </Avatar>
             <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-medium text-slate-900 truncate">{user?.firstName} {user?.lastName}</p>
-              <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+              <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{user?.firstName} {user?.lastName}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="w-full justify-start text-slate-600" onClick={logout}>
+          <Button variant="outline" size="sm" className="w-full justify-start text-slate-600 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-800" onClick={logout}>
             <LogOut className="w-4 h-4 mr-2" />
             Log out
           </Button>
@@ -81,35 +81,35 @@ export default function Layout({ children }: { children: ReactNode }) {
 
       {/* Mobile Header */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="md:hidden h-16 border-b bg-white flex items-center px-4 justify-between sticky top-0 z-20">
+        <header className="md:hidden h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center px-4 justify-between sticky top-0 z-20">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold">F</div>
-            <span className="text-lg font-display font-bold">FormFlow</span>
+            <span className="text-lg font-display font-bold text-slate-900 dark:text-white">FormFlow</span>
           </div>
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="dark:text-slate-400 dark:hover:text-white">
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
+            <SheetContent side="left" className="w-64 p-0 dark:bg-slate-900 dark:border-slate-800">
               {/* Mobile Nav Content */}
               <div className="flex flex-col h-full">
-                <div className="p-6 border-b">
-                  <span className="text-xl font-display font-bold">FormFlow</span>
+                <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+                  <span className="text-xl font-display font-bold text-slate-900 dark:text-white">FormFlow</span>
                 </div>
                 <nav className="flex-1 p-4 space-y-1">
                   {navItems.map((item) => (
                     <Link key={item.href} href={item.href}>
-                      <a className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100">
+                      <a className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
                         <item.icon className="w-4 h-4" />
                         {item.label}
                       </a>
                     </Link>
                   ))}
                 </nav>
-                <div className="p-4 border-t space-y-2">
-                  <Button variant="ghost" className="w-full justify-start" onClick={logout}>
+                <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                  <Button variant="ghost" className="w-full justify-start dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800" onClick={logout}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Log out
                   </Button>
