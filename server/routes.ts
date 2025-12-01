@@ -27,6 +27,23 @@ export async function registerRoutes(
   registerAuthRoutes(app);
   
   // Form routes
+  // Get live total responses from MongoDB
+  app.get("/api/user/total-responses", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userForms = await storage.getFormsByUserId(userId);
+      const formIds = userForms.map(f => f.id);
+      const totalResponses = formIds.length > 0 ? await (storage as any).getResponseCountByFormIds?.(formIds) || 0 : 0;
+      res.json({ totalResponses });
+    } catch (error) {
+      console.error("Error fetching total responses:", error);
+      res.status(500).json({ message: "Failed to fetch total responses" });
+    }
+  });
+
   app.get("/api/forms", isAuthenticated, async (req, res) => {
     try {
       const userId = getUserId(req);

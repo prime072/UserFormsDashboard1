@@ -298,6 +298,12 @@ export class MongoDBStorage implements IStorage {
     await this.connect();
     return await ResponseModel.countDocuments({ formId });
   }
+
+  async getResponseCountByFormIds(formIds: string[]): Promise<number> {
+    await this.connect();
+    if (formIds.length === 0) return 0;
+    return await ResponseModel.countDocuments({ formId: { $in: formIds } });
+  }
 }
 
 export const mongoStorage = new MongoDBStorage();

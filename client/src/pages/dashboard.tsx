@@ -33,9 +33,29 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [showSuspensionDialog, setShowSuspensionDialog] = useState(isSuspended);
+  const [liveResponses, setLiveResponses] = useState(0);
 
-  // Use cached metrics from user object instead of calculating each time
-  const cachedTotalResponses = user?.totalResponses || 0;
+  // Fetch live total responses from MongoDB
+  const fetchLiveResponses = async () => {
+    if (!user?.id) return;
+    try {
+      const response = await fetch("/api/user/total-responses", {
+        headers: { "x-user-id": user.id },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setLiveResponses(data.totalResponses);
+      }
+    } catch (error) {
+      console.error("Error fetching live responses:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveResponses();
+  }, [user?.id]);
+
+  // Use cached metrics from user object
   const cachedTotalForms = user?.totalForms || forms.length;
 
   // Get form limit from admin settings
@@ -59,7 +79,7 @@ export default function Dashboard() {
   
   const totalResponsesStat = {
     label: "Total Responses",
-    value: cachedTotalResponses.toString(),
+    value: liveResponses.toString(),
     icon: Users,
     color: "text-purple-600",
     bg: "bg-purple-100"
@@ -230,7 +250,7 @@ export default function Dashboard() {
               </div>
               <div className="space-y-2">
                 <p className="text-sm text-slate-600">Total Responses</p>
-                <p className="text-2xl font-bold">{cachedTotalResponses}</p>
+                <p className="text-2xl font-bold">{liveResponses}</p>
               </div>
               <div className="text-xs text-slate-500">
                 {canCreateForm ? "You can create more forms" : "You've reached your form limit"}
