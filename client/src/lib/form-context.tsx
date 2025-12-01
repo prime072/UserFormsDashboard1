@@ -3,6 +3,7 @@ import { formatDistanceToNow } from "date-fns";
 import * as XLSX from 'xlsx';
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle } from 'docx';
 import jsPDF from 'jspdf';
+import { useAuth } from "./auth-context";
 
 export type FieldType = "text" | "number" | "email" | "textarea" | "checkbox" | "select" | "radio" | "date";
 export type OutputFormat = "thank_you" | "whatsapp" | "excel" | "docx" | "pdf";
@@ -36,9 +37,9 @@ export interface FormResponse {
 type FormContextType = {
   forms: Form[];
   responses: FormResponse[];
-  addForm: (title: string, fields: FormField[], outputFormats?: OutputFormat[]) => void;
-  updateForm: (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[]) => void;
-  deleteForm: (id: string) => void;
+  addForm: (title: string, fields: FormField[], outputFormats?: OutputFormat[]) => Promise<void>;
+  updateForm: (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[]) => Promise<void>;
+  deleteForm: (id: string) => Promise<void>;
   getForm: (id: string) => Form | undefined;
   submitResponse: (formId: string, data: any) => { submissionId: string };
   getFormResponses: (formId: string) => FormResponse[];
@@ -70,58 +71,96 @@ const INITIAL_FORMS: Form[] = [
 ];
 
 export function FormProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [forms, setForms] = useState<Form[]>([]);
   const [responses, setResponses] = useState<FormResponse[]>([]);
 
   useEffect(() => {
-    const stored = localStorage.getItem("formflow_forms");
-    if (stored) {
-      setForms(JSON.parse(stored));
-    } else {
-      setForms(INITIAL_FORMS);
-      localStorage.setItem("formflow_forms", JSON.stringify(INITIAL_FORMS));
+    if (user) {
+      fetchForms();
     }
+  }, [user]);
 
-    const storedResponses = localStorage.getItem("formflow_all_responses");
-    if (storedResponses) {
-      setResponses(JSON.parse(storedResponses));
+  const fetchForms = async () => {
+    try {
+      const response = await fetch("/api/forms", {
+        headers: {
+          "x-user-id": user?.id || "",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setForms(data);
+      }
+    } catch (error) {
+      console.error("Error fetching forms:", error);
     }
-  }, []);
-
-  const addForm = (title: string, fields: FormField[], outputFormats?: OutputFormat[]) => {
-    const newForm: Form = {
-      id: Math.random().toString(36).substr(2, 9),
-      title,
-      status: "Active",
-      responses: 0,
-      lastUpdated: new Date().toISOString(),
-      fields,
-      outputFormats: outputFormats || ["thank_you"]
-    };
-    
-    const updatedForms = [newForm, ...forms];
-    setForms(updatedForms);
-    localStorage.setItem("formflow_forms", JSON.stringify(updatedForms));
   };
 
-  const updateForm = (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[]) => {
-    const updatedForms = forms.map(f => 
-      f.id === id 
-        ? { ...f, title, fields, lastUpdated: new Date().toISOString(), outputFormats: outputFormats || f.outputFormats }
-        : f
-    );
-    setForms(updatedForms);
-    localStorage.setItem("formflow_forms", JSON.stringify(updatedForms));
+  const addForm = async (title: string, fields: FormField[], outputFormats?: OutputFormat[]) => {
+    try {
+      const response = await fetch("/api/forms", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": user?.id || "",
+        },
+        body: JSON.stringify({
+          title,
+          fields,
+          outputFormats: outputFormats || ["thank_you"],
+        }),
+      });
+      if (response.ok) {
+        const newForm = await response.json();
+        setForms([newForm, ...forms]);
+      }
+    } catch (error) {
+      console.error("Error creating form:", error);
+    }
   };
 
-  const deleteForm = (id: string) => {
-    const updatedForms = forms.filter(f => f.id !== id);
-    setForms(updatedForms);
-    localStorage.setItem("formflow_forms", JSON.stringify(updatedForms));
-    
-    const updatedResponses = responses.filter(r => r.formId !== id);
-    setResponses(updatedResponses);
-    localStorage.setItem("formflow_all_responses", JSON.stringify(updatedResponses));
+  const updateForm = async (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[]) => {
+    try {
+      const response = await fetch(`/api/forms/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": user?.id || "",
+        },
+        body: JSON.stringify({
+          title,
+          fields,
+          outputFormats: outputFormats || ["thank_you"],
+        }),
+      });
+      if (response.ok) {
+        const updatedForm = await response.json();
+        setForms(forms.map(f => f.id === id ? updatedForm : f));
+      }
+    } catch (error) {
+      console.error("Error updating form:", error);
+    }
+  };
+
+  const deleteForm = async (id: string) => {
+    try {
+      const response = await fetch(`/api/forms/${id}`, {
+        method: "DELETE",
+        headers: {
+          "x-user-id": user?.id || "",
+        },
+      });
+      if (response.ok) {
+        const updatedForms = forms.filter(f => f.id !== id);
+        setForms(updatedForms);
+        
+        const updatedResponses = responses.filter(r => r.formId !== id);
+        setResponses(updatedResponses);
+      }
+    } catch (error) {
+      console.error("Error deleting form:", error);
+    }
   };
 
   const getForm = (id: string) => {

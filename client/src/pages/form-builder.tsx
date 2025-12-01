@@ -77,22 +77,30 @@ export default function FormBuilder() {
     }
   };
 
-  const handleSave = () => {
-    if (isEditing && formId) {
-      updateForm(formId, title, fields, outputFormats);
+  const handleSave = async () => {
+    try {
+      if (isEditing && formId) {
+        await updateForm(formId, title, fields, outputFormats);
+        toast({
+          title: "Form Updated",
+          description: "Your changes have been saved.",
+        });
+      } else {
+        await addForm(title, fields, outputFormats);
+        toast({
+          title: "Form Created",
+          description: "Your form has been created successfully.",
+        });
+      }
+      
+      setTimeout(() => setLocation("/dashboard"), 1000);
+    } catch (error) {
       toast({
-        title: "Form Updated",
-        description: "Your changes have been saved.",
-      });
-    } else {
-      addForm(title, fields, outputFormats);
-      toast({
-        title: "Form Created",
-        description: "Your form has been created successfully.",
+        title: "Error",
+        description: "Failed to save form.",
+        variant: "destructive"
       });
     }
-    
-    setTimeout(() => setLocation("/dashboard"), 1000);
   };
 
   return (
@@ -173,8 +181,8 @@ export default function FormBuilder() {
                       </div>
                     </div>
                     
-                    {/* Options Editor for Select/Radio */}
-                    {(field.type === 'select' || field.type === 'radio') && (
+                    {/* Options Editor for Select/Radio/Checkbox */}
+                    {(field.type === 'select' || field.type === 'radio' || field.type === 'checkbox') && (
                       <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2">
                         <Label className="text-xs text-slate-500 uppercase tracking-wider mb-2 block">Options</Label>
                         <div className="space-y-2 mb-3">
