@@ -17,6 +17,9 @@ type AuthContextType = {
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
   isLoading: boolean;
+  authError: string | null;
+  clearAuthError: () => void;
+  checkEmailExists: (email: string) => boolean;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -24,6 +27,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [, setLocation] = useLocation();
 
   useEffect(() => {
@@ -35,7 +39,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
+  const checkEmailExists = (email: string): boolean => {
+    const allUsers = JSON.parse(localStorage.getItem("formflow_all_users") || "[]") as User[];
+    return allUsers.some((u: User) => u.email === email);
+  };
+
   const login = (email: string) => {
+    // Check if email already exists
+    if (checkEmailExists(email)) {
+      setAuthError("This email is already registered. Please log in or use a different email.");
+      return;
+    }
+
+    setAuthError(null);
     const firstName = email.split("@")[0];
     const newUser: User = { 
       id: Math.random().toString(36).substr(2, 9),
@@ -49,13 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("formflow_user", JSON.stringify(newUser));
     
     // Track all users in admin system
-    const allUsers = JSON.parse(localStorage.getItem("formflow_all_users") || "[]");
-    const existingUserIndex = allUsers.findIndex((u: User) => u.email === email);
-    if (existingUserIndex >= 0) {
-      allUsers[existingUserIndex] = newUser;
-    } else {
-      allUsers.push(newUser);
-    }
+    const allUsers = JSON.parse(localStorage.getItem("formflow_all_users") || "[]") as User[];
+    allUsers.push(newUser);
     localStorage.setItem("formflow_all_users", JSON.stringify(allUsers));
     
     setUser(newUser);
@@ -77,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, isLoading, authError, clearAuthError: () => setAuthError(null), checkEmailExists }}>
       {children}
     </AuthContext.Provider>
   );

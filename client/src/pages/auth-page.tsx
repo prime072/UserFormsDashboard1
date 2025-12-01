@@ -9,10 +9,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import generatedImage from "@assets/generated_images/abstract_geometric_shapes_in_blue_and_indigo_on_white_background.png";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
-import { Shield } from "lucide-react";
+import { Shield, AlertCircle } from "lucide-react";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -20,7 +21,7 @@ const authSchema = z.object({
 });
 
 export default function AuthPage() {
-  const { login } = useAuth();
+  const { login, authError, clearAuthError } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof authSchema>>({
@@ -33,6 +34,7 @@ export default function AuthPage() {
 
   async function onSubmit(values: z.infer<typeof authSchema>) {
     setIsLoading(true);
+    clearAuthError();
     // Simulate API call
     setTimeout(() => {
       login(values.email);
@@ -90,6 +92,12 @@ export default function AuthPage() {
               </TabsList>
               
               <TabsContent value="login">
+                {authError && (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{authError}</AlertDescription>
+                  </Alert>
+                )}
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <FormField
@@ -126,6 +134,12 @@ export default function AuthPage() {
               </TabsContent>
               
               <TabsContent value="signup">
+                {authError && (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{authError}</AlertDescription>
+                  </Alert>
+                )}
                 <div className="space-y-4">
                   <div className="grid gap-2">
                     <Label htmlFor="name">Full Name</Label>
