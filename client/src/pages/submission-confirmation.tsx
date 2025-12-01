@@ -1,24 +1,24 @@
 import { useRoute, useLocation } from "wouter";
 import { useForms, OutputFormat } from "@/lib/form-context";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, ArrowLeft, Share2, Download, FileJson, File } from "lucide-react";
 import { generateExcel, generateDocx, generatePdf, generateWhatsAppShareMessage } from "@/lib/output-generators";
 
 export default function SubmissionConfirmation() {
   const [match, params] = useRoute("/s/:id/confirmation/:submissionId");
-  const { getForm } = useForms();
+  const { getForm, getFormResponses } = useForms();
   const [, setLocation] = useLocation();
 
   const formId = params?.id;
   const submissionId = params?.submissionId;
 
   const form = formId ? getForm(formId) : undefined;
-  const submissionData = submissionId 
-    ? JSON.parse(localStorage.getItem(`formflow_submission_${submissionId}`) || "{}")
-    : null;
+  const allResponses = formId ? getFormResponses(formId) : [];
+  const response = submissionId ? allResponses.find(r => r.id === submissionId) : null;
 
-  if (!form || !submissionData) {
+  if (!form || !response) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Card className="w-full max-w-md">
@@ -33,7 +33,7 @@ export default function SubmissionConfirmation() {
   }
 
   const outputFormats = form.outputFormats || ["thank_you"];
-  const { data } = submissionData;
+  const data = response.data;
 
   const handleDownloadExcel = () => {
     generateExcel(form.title, data);
