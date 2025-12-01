@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import LandingPage from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
+import MyForms from "@/pages/my-forms";
 import FormBuilder from "@/pages/form-builder";
 import PublicFormPage from "@/pages/public-form";
 import SubmissionConfirmation from "@/pages/submission-confirmation";

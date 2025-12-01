@@ -160,69 +160,55 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Recent Forms */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-slate-900">Recent Forms</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {forms.map((form) => (
-              <Card 
-                key={form.id} 
-                className="group hover:border-primary/50 transition-colors cursor-pointer flex flex-col"
-                onClick={() => setLocation(`/forms/${form.id}/edit`)}
-              >
-                <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
-                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      form.status === "Active" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"
-                    }`}>
-                      {form.status}
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 -mt-1 -mr-2 text-slate-400 hover:text-slate-600" onClick={(e) => e.stopPropagation()}>
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setLocation(`/forms/${form.id}/edit`); }}>
-                          <Edit className="w-4 h-4 mr-2" /> Edit Form
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setLocation(`/forms/${form.id}/responses`); }}>
-                          <Users className="w-4 h-4 mr-2" /> View Responses
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => handleShare(e, form.id)}>
-                          <Share2 className="w-4 h-4 mr-2" /> Share Link
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`/s/${form.id}`, '_blank'); }}>
-                          <ExternalLink className="w-4 h-4 mr-2" /> View Live
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600" onClick={(e) => handleDelete(e, form.id)}>
-                          <Trash2 className="w-4 h-4 mr-2" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <CardTitle className="text-lg group-hover:text-primary transition-colors truncate">{form.title}</CardTitle>
-                  <CardDescription>{responseStats[form.id] || 0} responses collected</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1">
-                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(responseStats[form.id] || 0, 100)}%` }}></div>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-4">
-                    Updated {formatDistanceToNow(new Date(form.lastUpdated || new Date()), { addSuffix: true })}
-                  </p>
-                </CardContent>
-                <CardFooter className="pt-0 gap-2 border-t bg-slate-50/50 p-4">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); setLocation(`/forms/${form.id}/edit`); }}>
-                    <Edit className="w-3 h-3 mr-2" /> Edit
-                  </Button>
-                  <Button size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); window.open(`/s/${form.id}`, '_blank'); }}>
-                    <ExternalLink className="w-3 h-3 mr-2" /> View
-                  </Button>
-                </CardFooter>
+        {/* Dashboard Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>Get started quickly</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Link href="/forms/new">
+                <Button className="w-full justify-start gap-2" variant="outline" data-testid="button-create-form-card">
+                  <Plus className="w-4 h-4" />
+                  Create New Form
+                </Button>
+              </Link>
+              <Link href="/responses">
+                <Button className="w-full justify-start gap-2" variant="outline" data-testid="button-view-responses-card">
+                  <Users className="w-4 h-4" />
+                  View All Responses
+                </Button>
+              </Link>
+              <Link href="/forms">
+                <Button className="w-full justify-start gap-2" variant="outline" data-testid="button-view-forms-card">
+                  <FileCheck className="w-4 h-4" />
+                  Browse All Forms
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Summary</CardTitle>
+              <CardDescription>Your FormFlow status</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm text-slate-600">Forms Created</p>
+                <p className="text-2xl font-bold">{forms.length}/{formLimit}</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-slate-600">Total Responses</p>
+                <p className="text-2xl font-bold">{totalResponses}</p>
+              </div>
+              <div className="text-xs text-slate-500">
+                {canCreateForm ? "You can create more forms" : "You've reached your form limit"}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
               </Card>
             ))}
             
