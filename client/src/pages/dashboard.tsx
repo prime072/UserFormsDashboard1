@@ -187,7 +187,7 @@ export default function Dashboard() {
                     <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(form.responses, 100)}%` }}></div>
                   </div>
                   <p className="text-xs text-slate-400 mt-4">
-                    Updated {formatDistanceToNow(new Date(form.lastUpdated), { addSuffix: true })}
+                    Updated {formatDistanceToNow(new Date(form.lastUpdated || new Date()), { addSuffix: true })}
                   </p>
                 </CardContent>
                 <CardFooter className="pt-0 gap-2 border-t bg-slate-50/50 p-4">
