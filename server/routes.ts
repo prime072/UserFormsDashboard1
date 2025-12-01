@@ -144,6 +144,30 @@ export async function registerRoutes(
     }
   });
 
+  // Get all responses for all user's forms
+  app.get("/api/user/responses", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const userForms = await storage.getFormsByUserId(userId);
+      const formIds = userForms.map(f => f.id);
+
+      const allResponses: any[] = [];
+      for (const formId of formIds) {
+        const responses = await storage.getResponsesByFormId(formId);
+        allResponses.push(...responses);
+      }
+
+      res.json(allResponses);
+    } catch (error) {
+      console.error("Error fetching all responses:", error);
+      res.status(500).json({ message: "Failed to fetch responses" });
+    }
+  });
+
   app.get("/api/responses/:id", async (req, res) => {
     try {
       const response = await storage.getResponse(req.params.id);

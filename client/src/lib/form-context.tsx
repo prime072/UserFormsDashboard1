@@ -79,6 +79,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user) {
       fetchForms();
+      fetchAllResponses();
     }
   }, [user]);
 
@@ -96,6 +97,23 @@ export function FormProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error("Error fetching forms:", error);
+    }
+  };
+
+  const fetchAllResponses = async () => {
+    if (!user?.id) return;
+    try {
+      const response = await fetch("/api/user/responses", {
+        headers: {
+          "x-user-id": user.id,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setResponses(data);
+      }
+    } catch (error) {
+      console.error("Error fetching all responses:", error);
     }
   };
 
