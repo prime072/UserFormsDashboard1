@@ -9,6 +9,7 @@ import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import FormBuilder from "@/pages/form-builder";
 import PublicFormPage from "@/pages/public-form";
+import SubmissionConfirmation from "@/pages/submission-confirmation";
 import { ReactNode } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -44,6 +45,7 @@ function Router() {
       
       {/* Public Route - No Protection needed */}
       <Route path="/s/:id" component={PublicFormPage} />
+      <Route path="/s/:id/confirmation/:submissionId" component={SubmissionConfirmation} />
 
       {/* Default Route */}
       <Route path="/">

@@ -9,8 +9,9 @@ import { Switch } from "@/components/ui/switch";
 import { Trash2, Plus, GripVertical, ChevronLeft, Save, X } from "lucide-react";
 import { Link, useLocation, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { useForms, FormField, FieldType } from "@/lib/form-context";
+import { useForms, FormField, FieldType, OutputFormat } from "@/lib/form-context";
 import { Badge } from "@/components/ui/badge";
+import OutputSettings from "@/components/output-settings";
 
 export default function FormBuilder() {
   const [, setLocation] = useLocation();
@@ -26,6 +27,7 @@ export default function FormBuilder() {
     { id: "1", type: "text", label: "Full Name", placeholder: "John Doe", required: true },
     { id: "2", type: "email", label: "Email Address", placeholder: "john@example.com", required: true }
   ]);
+  const [outputFormats, setOutputFormats] = useState<OutputFormat[]>(["thank_you"]);
 
   useEffect(() => {
     if (isEditing && formId) {
@@ -33,6 +35,7 @@ export default function FormBuilder() {
       if (existingForm) {
         setTitle(existingForm.title);
         setFields(existingForm.fields.length > 0 ? existingForm.fields : fields);
+        setOutputFormats(existingForm.outputFormats || ["thank_you"]);
       }
     }
   }, [isEditing, formId]);
@@ -76,13 +79,13 @@ export default function FormBuilder() {
 
   const handleSave = () => {
     if (isEditing && formId) {
-      updateForm(formId, title, fields);
+      updateForm(formId, title, fields, outputFormats);
       toast({
         title: "Form Updated",
         description: "Your changes have been saved.",
       });
     } else {
-      addForm(title, fields);
+      addForm(title, fields, outputFormats);
       toast({
         title: "Form Created",
         description: "Your form has been created successfully.",
@@ -116,6 +119,14 @@ export default function FormBuilder() {
               {isEditing ? "Update Form" : "Save Form"}
             </Button>
           </div>
+        </div>
+
+        {/* Output Settings */}
+        <div className="mb-8">
+          <OutputSettings 
+            selectedFormats={outputFormats}
+            onChange={setOutputFormats}
+          />
         </div>
 
         {/* Form Canvas */}

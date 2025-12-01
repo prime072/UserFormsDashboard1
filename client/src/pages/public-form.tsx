@@ -36,13 +36,12 @@ export default function PublicFormPage() {
   }
 
   const onSubmit = (data: any) => {
-    submitResponse(form.id, data);
+    const { submissionId } = submitResponse(form.id, data);
     toast({
       title: "Response Submitted",
       description: "Thank you for filling out this form!",
     });
-    // In a real app, maybe redirect to a thank you page or clear form
-    setTimeout(() => window.location.reload(), 2000);
+    setTimeout(() => setLocation(`/s/${form.id}/confirmation/${submissionId}`), 500);
   };
 
   return (

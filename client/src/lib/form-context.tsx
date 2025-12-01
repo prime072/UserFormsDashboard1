@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { formatDistanceToNow } from "date-fns";
 
 export type FieldType = "text" | "number" | "email" | "textarea" | "checkbox" | "select" | "radio" | "date";
+export type OutputFormat = "thank_you" | "whatsapp" | "excel" | "docx" | "pdf";
 
 export interface FormField {
   id: string;
@@ -19,15 +20,16 @@ export interface Form {
   responses: number;
   lastUpdated: string; // ISO date string
   fields: FormField[];
+  outputFormats?: OutputFormat[];
 }
 
 type FormContextType = {
   forms: Form[];
-  addForm: (title: string, fields: FormField[]) => void;
-  updateForm: (id: string, title: string, fields: FormField[]) => void;
+  addForm: (title: string, fields: FormField[], outputFormats?: OutputFormat[]) => void;
+  updateForm: (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[]) => void;
   deleteForm: (id: string) => void;
   getForm: (id: string) => Form | undefined;
-  submitResponse: (formId: string, data: any) => void;
+  submitResponse: (formId: string, data: any) => { submissionId: string };
 };
 
 const FormContext = createContext<FormContextType | null>(null);
@@ -39,24 +41,27 @@ const INITIAL_FORMS: Form[] = [
     title: "Customer Feedback", 
     responses: 342, 
     status: "Active", 
-    lastUpdated: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    fields: [] 
+    lastUpdated: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    fields: [],
+    outputFormats: ["thank_you", "excel", "pdf"]
   },
   { 
     id: "2", 
     title: "Event Registration", 
     responses: 89, 
     status: "Active", 
-    lastUpdated: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-    fields: [] 
+    lastUpdated: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    fields: [],
+    outputFormats: ["thank_you", "whatsapp"]
   },
   { 
     id: "3", 
     title: "Employee Satisfaction", 
     responses: 45, 
     status: "Draft", 
-    lastUpdated: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3 days ago
-    fields: [] 
+    lastUpdated: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+    fields: [],
+    outputFormats: ["thank_you"]
   },
 ];
 
@@ -74,14 +79,15 @@ export function FormProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const addForm = (title: string, fields: FormField[]) => {
+  const addForm = (title: string, fields: FormField[], outputFormats?: OutputFormat[]) => {
     const newForm: Form = {
       id: Math.random().toString(36).substr(2, 9),
       title,
       status: "Active",
       responses: 0,
       lastUpdated: new Date().toISOString(),
-      fields
+      fields,
+      outputFormats: outputFormats || ["thank_you"]
     };
     
     const updatedForms = [newForm, ...forms];
@@ -89,10 +95,10 @@ export function FormProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("formflow_forms", JSON.stringify(updatedForms));
   };
 
-  const updateForm = (id: string, title: string, fields: FormField[]) => {
+  const updateForm = (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[]) => {
     const updatedForms = forms.map(f => 
       f.id === id 
-        ? { ...f, title, fields, lastUpdated: new Date().toISOString() }
+        ? { ...f, title, fields, lastUpdated: new Date().toISOString(), outputFormats: outputFormats || f.outputFormats }
         : f
     );
     setForms(updatedForms);
@@ -110,8 +116,8 @@ export function FormProvider({ children }: { children: ReactNode }) {
   };
 
   const submitResponse = (formId: string, data: any) => {
-    // In a real app, this would send to backend
-    // Here we just update the response count for the mock
+    const submissionId = Math.random().toString(36).substr(2, 9);
+    
     const updatedForms = forms.map(f => 
       f.id === formId 
         ? { ...f, responses: f.responses + 1 }
@@ -120,10 +126,13 @@ export function FormProvider({ children }: { children: ReactNode }) {
     setForms(updatedForms);
     localStorage.setItem("formflow_forms", JSON.stringify(updatedForms));
     
-    // We could also store the actual response data in a separate localStorage key
     const responsesKey = `formflow_responses_${formId}`;
     const existingResponses = JSON.parse(localStorage.getItem(responsesKey) || "[]");
-    localStorage.setItem(responsesKey, JSON.stringify([...existingResponses, { ...data, submittedAt: new Date().toISOString() }]));
+    const submission = { id: submissionId, ...data, submittedAt: new Date().toISOString() };
+    localStorage.setItem(responsesKey, JSON.stringify([...existingResponses, submission]));
+    localStorage.setItem(`formflow_submission_${submissionId}`, JSON.stringify({ formId, data: submission }));
+    
+    return { submissionId };
   };
 
   return (
