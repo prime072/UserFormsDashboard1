@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import crypto from "crypto";
 
 // Initialize transporter with Gmail App Password
 const transporter = nodemailer.createTransport({
@@ -60,5 +61,5 @@ export function generateOTP(): string {
 }
 
 export function generateToken(): string {
-  return require("crypto").randomBytes(32).toString("hex");
+  return crypto.randomBytes(32).toString("hex");
 }
