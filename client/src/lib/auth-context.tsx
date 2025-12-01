@@ -9,6 +9,7 @@ export type User = {
   phone?: string;
   company?: string;
   photo?: string;
+  status?: "active" | "suspended";
 };
 
 type AuthContextType = {
@@ -21,6 +22,7 @@ type AuthContextType = {
   isLoading: boolean;
   authError: string | null;
   clearAuthError: () => void;
+  isSuspended: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -29,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isSuspended, setIsSuspended] = useState(false);
   const [, setLocation] = useLocation();
 
   useEffect(() => {
@@ -74,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       setAuthError(null);
+      setIsSuspended(false);
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -87,6 +91,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const user = await response.json();
+      
+      // Check if user is suspended
+      if (user.status === "suspended") {
+        setIsSuspended(true);
+        sessionStorage.setItem("formflow_user", JSON.stringify(user));
+        setUser(user);
+        return;
+      }
+      
       sessionStorage.setItem("formflow_user", JSON.stringify(user));
       setUser(user);
       setLocation("/dashboard");

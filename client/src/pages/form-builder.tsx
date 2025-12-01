@@ -195,8 +195,8 @@ export default function FormBuilder() {
                       </div>
                     )}
                     
-                    {/* Options Editor for Select/Radio/Checkbox */}
-                    {(field.type === 'select' || field.type === 'radio' || field.type === 'checkbox') && (
+                    {/* Options Editor for Select/Radio only */}
+                    {(field.type === 'select' || field.type === 'radio') && (
                       <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2">
                         <Label className="text-xs text-slate-500 uppercase tracking-wider mb-2 block">Options</Label>
                         <div className="space-y-2 mb-3">
