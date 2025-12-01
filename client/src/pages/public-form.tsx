@@ -35,21 +35,41 @@ export default function PublicFormPage() {
     );
   }
 
-  const onSubmit = (data: any) => {
-    // Convert field IDs to field labels for better readability
-    const formattedData: Record<string, any> = {};
-    form.fields.forEach(field => {
-      if (data[field.id] !== undefined) {
-        formattedData[field.label] = data[field.id];
-      }
-    });
-    
-    const { submissionId } = submitResponse(form.id, formattedData);
-    toast({
-      title: "Response Submitted",
-      description: "Thank you for filling out this form!",
-    });
-    setTimeout(() => setLocation(`/s/${form.id}/confirmation/${submissionId}`), 500);
+  const onSubmit = async (data: any) => {
+    try {
+      // Convert field IDs to field labels for better readability
+      const formattedData: Record<string, any> = {};
+      form.fields.forEach(field => {
+        if (data[field.id] !== undefined) {
+          formattedData[field.label] = data[field.id];
+        }
+      });
+      
+      // Submit response to MongoDB via API
+      const response = await fetch("/api/responses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          formId: form.id,
+          data: formattedData,
+        }),
+      });
+      
+      if (!response.ok) throw new Error("Failed to submit response");
+      
+      const result = await response.json();
+      toast({
+        title: "Response Submitted",
+        description: "Thank you for filling out this form!",
+      });
+      setTimeout(() => setLocation(`/s/${form.id}/confirmation/${result.id}`), 500);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit response",
+        variant: "destructive"
+      });
+    }
   };
 
   return (

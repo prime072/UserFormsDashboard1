@@ -41,10 +41,11 @@ type FormContextType = {
   updateForm: (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[]) => Promise<void>;
   deleteForm: (id: string) => Promise<void>;
   getForm: (id: string) => Form | undefined;
-  submitResponse: (formId: string, data: any) => { submissionId: string };
+  submitResponse: (formId: string, data: any) => Promise<{ submissionId: string }>;
   getFormResponses: (formId: string) => FormResponse[];
   updateResponse: (responseId: string, data: Record<string, any>) => void;
   deleteResponse: (responseId: string) => void;
+  fetchFormResponses: (formId: string) => Promise<void>;
 };
 
 const FormContext = createContext<FormContextType | null>(null);
@@ -171,34 +172,54 @@ export function FormProvider({ children }: { children: ReactNode }) {
     return forms.find(f => f.id === id);
   };
 
-  const submitResponse = (formId: string, data: any) => {
-    const submissionId = Math.random().toString(36).substr(2, 9);
-    
-    const updatedForms = forms.map(f => 
-      f.id === formId 
-        ? { ...f, responses: f.responses + 1, lastUpdated: new Date().toISOString() }
-        : f
-    );
-    setForms(updatedForms);
-    localStorage.setItem("formflow_forms", JSON.stringify(updatedForms));
-    
-    const newResponse: FormResponse = {
-      id: submissionId,
-      formId,
-      data,
-      submittedAt: new Date().toISOString()
-    };
-    
-    const updatedResponses = [newResponse, ...responses];
-    setResponses(updatedResponses);
-    localStorage.setItem("formflow_all_responses", JSON.stringify(updatedResponses));
-    localStorage.setItem(`formflow_submission_${submissionId}`, JSON.stringify({ formId, data: newResponse }));
-    
-    return { submissionId };
+  const submitResponse = async (formId: string, data: any) => {
+    try {
+      const response = await fetch("/api/responses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formId, data }),
+      });
+      
+      if (!response.ok) throw new Error("Failed to submit response");
+      
+      const newResponse = await response.json();
+      
+      // Update local form count
+      const updatedForms = forms.map(f => 
+        f.id === formId 
+          ? { ...f, responses: f.responses + 1, lastUpdated: new Date().toISOString() }
+          : f
+      );
+      setForms(updatedForms);
+      
+      // Add to local responses
+      const updatedResponses = [newResponse, ...responses];
+      setResponses(updatedResponses);
+      
+      return { submissionId: newResponse.id };
+    } catch (error) {
+      console.error("Error submitting response:", error);
+      throw error;
+    }
   };
 
   const getFormResponses = (formId: string) => {
     return responses.filter(r => r.formId === formId);
+  };
+
+  const fetchFormResponses = async (formId: string) => {
+    if (!user?.id) return;
+    try {
+      const response = await fetch(`/api/forms/${formId}/responses`, {
+        headers: { "x-user-id": user.id },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setResponses(data);
+      }
+    } catch (error) {
+      console.error("Error fetching form responses:", error);
+    }
   };
 
   const updateResponse = (responseId: string, data: Record<string, any>) => {
@@ -208,7 +229,6 @@ export function FormProvider({ children }: { children: ReactNode }) {
         : r
     );
     setResponses(updatedResponses);
-    localStorage.setItem("formflow_all_responses", JSON.stringify(updatedResponses));
   };
 
   const deleteResponse = (responseId: string) => {
@@ -217,7 +237,6 @@ export function FormProvider({ children }: { children: ReactNode }) {
 
     const updatedResponses = responses.filter(r => r.id !== responseId);
     setResponses(updatedResponses);
-    localStorage.setItem("formflow_all_responses", JSON.stringify(updatedResponses));
 
     const updatedForms = forms.map(f =>
       f.id === response.formId
@@ -225,11 +244,10 @@ export function FormProvider({ children }: { children: ReactNode }) {
         : f
     );
     setForms(updatedForms);
-    localStorage.setItem("formflow_forms", JSON.stringify(updatedForms));
   };
 
   return (
-    <FormContext.Provider value={{ forms, responses, addForm, updateForm, deleteForm, getForm, submitResponse, getFormResponses, updateResponse, deleteResponse }}>
+    <FormContext.Provider value={{ forms, responses, addForm, updateForm, deleteForm, getForm, submitResponse, getFormResponses, updateResponse, deleteResponse, fetchFormResponses }}>
       {children}
     </FormContext.Provider>
   );

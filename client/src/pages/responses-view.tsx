@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import Layout from "@/components/layout";
 import { useForms } from "@/lib/form-context";
+import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,13 +15,20 @@ export default function ResponsesView() {
   const [, setLocation] = useLocation();
   const [match, params] = useRoute("/forms/:id/responses");
   const { toast } = useToast();
-  const { getForm, getFormResponses, updateResponse, deleteResponse } = useForms();
+  const { user } = useAuth();
+  const { getForm, getFormResponses, updateResponse, deleteResponse, fetchFormResponses } = useForms();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Record<string, any>>({});
 
   const formId = params?.id;
   const form = formId ? getForm(formId) : undefined;
   const formResponses = formId ? getFormResponses(formId) : [];
+
+  useEffect(() => {
+    if (formId && user?.id) {
+      fetchFormResponses(formId);
+    }
+  }, [formId, user?.id]);
 
   if (!form) {
     return (
