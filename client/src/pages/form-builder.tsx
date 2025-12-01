@@ -9,21 +9,13 @@ import { Switch } from "@/components/ui/switch";
 import { Trash2, Plus, GripVertical, ChevronLeft, Save } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-
-type FieldType = "text" | "number" | "email" | "textarea" | "checkbox" | "select";
-
-interface FormField {
-  id: string;
-  type: FieldType;
-  label: string;
-  placeholder?: string;
-  required: boolean;
-  options?: string[]; // For select inputs
-}
+import { useForms, FormField, FieldType } from "@/lib/form-context";
 
 export default function FormBuilder() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { addForm } = useForms();
+  
   const [title, setTitle] = useState("Untitled Form");
   const [fields, setFields] = useState<FormField[]>([
     { id: "1", type: "text", label: "Full Name", placeholder: "John Doe", required: true },
@@ -49,10 +41,14 @@ export default function FormBuilder() {
   };
 
   const handleSave = () => {
+    // Save to context/localStorage
+    addForm(title, fields);
+
     toast({
       title: "Form Saved",
       description: "Your form has been saved successfully.",
     });
+    
     setTimeout(() => setLocation("/dashboard"), 1000);
   };
 

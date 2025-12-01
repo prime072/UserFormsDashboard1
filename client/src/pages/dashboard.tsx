@@ -1,25 +1,29 @@
-import { useState } from "react";
 import Layout from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Users, FileCheck, TrendingUp } from "lucide-react";
 import { Link } from "wouter";
+import { useForms } from "@/lib/form-context";
+import { formatDistanceToNow } from "date-fns";
 
-// Mock data
+// Mock data for stats (since we don't track responses yet)
 const stats = [
   { label: "Total Forms", value: "12", icon: FileCheck, color: "text-blue-600", bg: "bg-blue-100" },
   { label: "Total Responses", value: "1,284", icon: Users, color: "text-purple-600", bg: "bg-purple-100" },
   { label: "Completion Rate", value: "64%", icon: TrendingUp, color: "text-green-600", bg: "bg-green-100" },
 ];
 
-const forms = [
-  { id: 1, title: "Customer Feedback", responses: 342, status: "Active", lastUpdated: "2 hours ago" },
-  { id: 2, title: "Event Registration", responses: 89, status: "Active", lastUpdated: "1 day ago" },
-  { id: 3, title: "Employee Satisfaction", responses: 45, status: "Draft", lastUpdated: "3 days ago" },
-  { id: 4, title: "Contact Us", responses: 808, status: "Active", lastUpdated: "1 week ago" },
-];
-
 export default function Dashboard() {
+  const { forms } = useForms();
+
+  // Calculate real total forms for the stat
+  const totalFormsStat = { 
+    ...stats[0], 
+    value: forms.length.toString() 
+  };
+
+  const displayStats = [totalFormsStat, stats[1], stats[2]];
+
   return (
     <Layout>
       <div className="max-w-6xl mx-auto space-y-8">
@@ -40,7 +44,7 @@ export default function Dashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {stats.map((stat) => (
+          {displayStats.map((stat) => (
             <Card key={stat.label} className="border-slate-100 shadow-sm">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className={`p-3 rounded-xl ${stat.bg}`}>
@@ -68,13 +72,16 @@ export default function Dashboard() {
                     }`}>
                       {form.status}
                     </div>
-                    <span className="text-xs text-slate-400">{form.lastUpdated}</span>
+                    <span className="text-xs text-slate-400">
+                      {formatDistanceToNow(new Date(form.lastUpdated), { addSuffix: true })}
+                    </span>
                   </div>
                   <CardTitle className="text-lg group-hover:text-primary transition-colors">{form.title}</CardTitle>
                   <CardDescription>{form.responses} responses collected</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    {/* Random progress bar for visual effect since we don't have real goals yet */}
                     <div className="h-full bg-primary rounded-full" style={{ width: `${Math.random() * 100}%` }}></div>
                   </div>
                 </CardContent>
