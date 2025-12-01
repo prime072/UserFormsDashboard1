@@ -2,6 +2,7 @@ import { type Express } from "express";
 import { storage } from "./storage";
 import { z } from "zod";
 import bcrypt from "bcrypt";
+import { sendVerificationEmail, sendPasswordResetOTP, generateOTP, generateToken } from "./email-service";
 
 const signupSchema = z.object({
   email: z.string().email(),
@@ -32,6 +33,10 @@ export function registerAuthRoutes(app: Express) {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
+      // Generate verification token
+      const verificationToken = generateToken();
+      const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
       // Create new user with MongoDB storage
       const newUser = await storage.createUser({
         email,
@@ -42,16 +47,24 @@ export function registerAuthRoutes(app: Express) {
         company: "",
         photo: "",
         password: hashedPassword,
+        emailVerified: false,
+        verificationToken,
+        verificationTokenExpiry,
       } as any);
+
+      // Send verification email
+      try {
+        await sendVerificationEmail(email, verificationToken);
+      } catch (emailError) {
+        console.error("Failed to send verification email:", emailError);
+      }
 
       res.status(201).json({
         id: newUser.id,
         email: newUser.email,
         firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        phone: newUser.phone,
-        company: newUser.company,
-        photo: newUser.photo,
+        emailVerified: false,
+        message: "Account created. Please verify your email to continue.",
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -59,6 +72,37 @@ export function registerAuthRoutes(app: Express) {
       }
       console.error("Signup error:", error);
       res.status(500).json({ error: "Signup failed" });
+    }
+  });
+
+  // Verify email token
+  app.post("/api/auth/verify-email", async (req, res) => {
+    try {
+      const { token } = req.body;
+      if (!token) {
+        return res.status(400).json({ error: "Verification token is required" });
+      }
+
+      const user = await (storage as any).getUserByVerificationToken?.(token);
+      if (!user) {
+        return res.status(400).json({ error: "Invalid or expired verification token" });
+      }
+
+      if (new Date() > (user as any).verificationTokenExpiry) {
+        return res.status(400).json({ error: "Verification token has expired" });
+      }
+
+      // Update user to mark email as verified
+      await (storage as any).updateUser?.(user.id, {
+        emailVerified: true,
+        verificationToken: null,
+        verificationTokenExpiry: null,
+      });
+
+      res.json({ message: "Email verified successfully. You can now log in." });
+    } catch (error) {
+      console.error("Email verification error:", error);
+      res.status(500).json({ error: "Email verification failed" });
     }
   });
 
@@ -72,6 +116,15 @@ export function registerAuthRoutes(app: Express) {
       
       if (!user) {
         return res.status(401).json({ error: "Invalid email or password" });
+      }
+
+      // Check if email is verified
+      if (!(user as any).emailVerified) {
+        return res.status(403).json({ 
+          error: "Please verify your email before logging in",
+          requiresEmailVerification: true,
+          email: user.email
+        });
       }
 
       // Verify password
@@ -102,6 +155,124 @@ export function registerAuthRoutes(app: Express) {
       }
       console.error("Login error:", error);
       res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  // Forgot password - Request OTP
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      const user = await (storage as any).getUserByEmail?.(email);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const otp = generateOTP();
+      const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      // Save OTP to user
+      await (storage as any).updateUser?.(user.id, {
+        resetOTP: otp,
+        resetOTPExpiry: otpExpiry,
+      });
+
+      // Send OTP email
+      try {
+        await sendPasswordResetOTP(email, otp);
+      } catch (emailError) {
+        console.error("Failed to send reset OTP:", emailError);
+      }
+
+      res.json({ 
+        message: "OTP sent to your email",
+        userId: user.id
+      });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ error: "Failed to process forgot password" });
+    }
+  });
+
+  // Verify OTP
+  app.post("/api/auth/verify-otp", async (req, res) => {
+    try {
+      const { userId, otp } = req.body;
+      if (!userId || !otp) {
+        return res.status(400).json({ error: "User ID and OTP are required" });
+      }
+
+      const user = await (storage as any).getUser?.(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      if ((user as any).resetOTP !== otp) {
+        return res.status(400).json({ error: "Invalid OTP" });
+      }
+
+      if (new Date() > (user as any).resetOTPExpiry) {
+        return res.status(400).json({ error: "OTP has expired" });
+      }
+
+      // Generate reset token
+      const resetToken = generateToken();
+      const resetTokenExpiry = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+
+      await (storage as any).updateUser?.(userId, {
+        resetToken,
+        resetTokenExpiry,
+        resetOTP: null,
+        resetOTPExpiry: null,
+      });
+
+      res.json({ 
+        message: "OTP verified",
+        resetToken
+      });
+    } catch (error) {
+      console.error("OTP verification error:", error);
+      res.status(500).json({ error: "OTP verification failed" });
+    }
+  });
+
+  // Reset password
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { userId, resetToken, newPassword } = req.body;
+      if (!userId || !resetToken || !newPassword) {
+        return res.status(400).json({ error: "User ID, reset token, and new password are required" });
+      }
+
+      const user = await (storage as any).getUser?.(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      if ((user as any).resetToken !== resetToken) {
+        return res.status(400).json({ error: "Invalid reset token" });
+      }
+
+      if (new Date() > (user as any).resetTokenExpiry) {
+        return res.status(400).json({ error: "Reset token has expired" });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+      await (storage as any).updateUser?.(userId, {
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null,
+      });
+
+      res.json({ message: "Password reset successfully" });
+    } catch (error) {
+      console.error("Password reset error:", error);
+      res.status(500).json({ error: "Password reset failed" });
     }
   });
 
