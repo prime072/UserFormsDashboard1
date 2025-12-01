@@ -10,6 +10,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers?(): Promise<User[]>;
+  deleteUser?(id: string): Promise<boolean>;
   
   // Form methods
   getForm(id: string): Promise<Form | undefined>;

@@ -17,6 +17,7 @@ import ResponsesDashboard from "@/pages/responses-dashboard";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import Profile from "@/pages/profile";
+import Settings from "@/pages/settings";
 import { ReactNode } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -76,6 +77,9 @@ function Router() {
       </Route>
       <Route path="/profile">
         <ProtectedRoute component={Profile} />
+      </Route>
+      <Route path="/settings">
+        <ProtectedRoute component={Settings} />
       </Route>
 
       {/* Admin Routes */}

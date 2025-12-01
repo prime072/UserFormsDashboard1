@@ -106,6 +106,19 @@ export class MongoDBStorage implements IStorage {
     });
   }
 
+  async deleteUser(id: string): Promise<boolean> {
+    await this.connect();
+    // Delete user
+    await UserModel.deleteOne({ id });
+    // Delete all user's forms
+    await FormModel.deleteMany({ userId: id });
+    // Delete all responses for user's forms
+    const userForms = await FormModel.find({ userId: id });
+    const formIds = userForms.map(f => f.id);
+    await ResponseModel.deleteMany({ formId: { $in: formIds } });
+    return true;
+  }
+
   async createUser(user: InsertUser): Promise<User> {
     await this.connect();
     const id = Math.random().toString(36).substr(2, 9);

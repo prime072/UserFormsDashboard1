@@ -17,6 +17,7 @@ type AuthContextType = {
   signup: (email: string, password: string, firstName: string) => Promise<void>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => Promise<void>;
+  deleteAccount: () => Promise<void>;
   isLoading: boolean;
   authError: string | null;
   clearAuthError: () => void;
@@ -126,8 +127,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const deleteAccount = async () => {
+    if (!user) return;
+    try {
+      const response = await fetch("/api/auth/account", {
+        method: "DELETE",
+        headers: {
+          "x-user-id": user.id,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete account");
+      }
+
+      sessionStorage.removeItem("formflow_user");
+      setUser(null);
+      setLocation("/auth");
+    } catch (error) {
+      console.error("Delete account error:", error);
+      setAuthError("Failed to delete account");
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, updateUser, isLoading, authError, clearAuthError: () => setAuthError(null) }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, updateUser, deleteAccount, isLoading, authError, clearAuthError: () => setAuthError(null) }}>
       {children}
     </AuthContext.Provider>
   );

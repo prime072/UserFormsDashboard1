@@ -126,6 +126,22 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
+  // Delete user account
+  app.delete("/api/auth/account", async (req, res) => {
+    try {
+      const userId = req.headers["x-user-id"] as string;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      await (storage as any).deleteUser?.(userId);
+      res.json({ message: "Account deleted successfully" });
+    } catch (error) {
+      console.error("Account deletion error:", error);
+      res.status(500).json({ error: "Failed to delete account" });
+    }
+  });
+
   // Get current user
   app.get("/api/auth/me", async (req, res) => {
     try {
