@@ -5,18 +5,43 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, ArrowLeft, Share2, Download, FileJson, File } from "lucide-react";
 import { generateExcel, generateDocx, generatePdf, generateWhatsAppShareMessage } from "@/lib/output-generators";
+import { useState, useEffect } from "react";
 
 export default function SubmissionConfirmation() {
   const [match, params] = useRoute("/s/:id/confirmation/:submissionId");
   const { getForm, getFormResponses } = useForms();
   const [, setLocation] = useLocation();
+  const [response, setResponse] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const formId = params?.id;
   const submissionId = params?.submissionId;
 
   const form = formId ? getForm(formId) : undefined;
-  const allResponses = formId ? getFormResponses(formId) : [];
-  const response = submissionId ? allResponses.find(r => r.id === submissionId) : null;
+
+  useEffect(() => {
+    if (submissionId) {
+      fetch(`/api/responses/${submissionId}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          setResponse(data);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    }
+  }, [submissionId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <p className="text-slate-600">Loading your submission...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!form || !response) {
     return (

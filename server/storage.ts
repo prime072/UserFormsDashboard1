@@ -19,6 +19,7 @@ export interface IStorage {
   
   // Response methods
   createResponse(response: InsertResponse): Promise<Response>;
+  getResponse(id: string): Promise<Response | undefined>;
   getResponsesByFormId(formId: string): Promise<Response[]>;
   getResponseCount(formId: string): Promise<number>;
 }

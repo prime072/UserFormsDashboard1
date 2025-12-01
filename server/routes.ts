@@ -144,6 +144,19 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/responses/:id", async (req, res) => {
+    try {
+      const response = await storage.getResponse(req.params.id);
+      if (!response) {
+        return res.status(404).json({ message: "Response not found" });
+      }
+      res.json(response);
+    } catch (error) {
+      console.error("Error fetching response:", error);
+      res.status(500).json({ message: "Failed to fetch response" });
+    }
+  });
+
   app.get("/api/forms/:id/responses", isAuthenticated, async (req, res) => {
     try {
       const userId = getUserId(req);
