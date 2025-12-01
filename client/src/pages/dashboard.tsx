@@ -209,19 +209,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
-              </Card>
-            ))}
-            
-            {/* Create New Card */}
-            <Link href="/forms/new">
-              <div className="h-full border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center p-6 text-slate-400 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all cursor-pointer min-h-[250px]">
-                <Plus className="w-10 h-10 mb-2 opacity-50" />
-                <span className="font-medium">Create New Form</span>
-              </div>
-            </Link>
-          </div>
-        </div>
-
       </div>
     </Layout>
   );

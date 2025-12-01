@@ -74,7 +74,7 @@ function Router() {
         <ProtectedRoute component={ResponsesDashboard} />
       </Route>
       <Route path="/forms">
-        <ProtectedRoute component={Dashboard} />
+        <ProtectedRoute component={MyForms} />
       </Route>
       <Route path="/profile">
         <ProtectedRoute component={Profile} />
