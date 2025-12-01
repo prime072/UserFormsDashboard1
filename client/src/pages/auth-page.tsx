@@ -32,24 +32,18 @@ export default function AuthPage() {
     },
   });
 
-  function onLoginSubmit(values: z.infer<typeof authSchema>) {
+  async function onLoginSubmit(values: z.infer<typeof authSchema>) {
     setIsLoading(true);
     clearAuthError();
-    // Simulate API call delay
-    setTimeout(() => {
-      login(values.email);
-      setIsLoading(false);
-    }, 500);
+    await login(values.email);
+    setIsLoading(false);
   }
 
-  function onSignupSubmit(values: z.infer<typeof authSchema>) {
+  async function onSignupSubmit(values: z.infer<typeof authSchema>) {
     setIsLoading(true);
     clearAuthError();
-    // Simulate API call delay
-    setTimeout(() => {
-      signup(values.email);
-      setIsLoading(false);
-    }, 500);
+    await signup(values.email);
+    setIsLoading(false);
   }
 
   return (

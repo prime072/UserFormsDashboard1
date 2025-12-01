@@ -16,22 +16,28 @@ export function registerAuthRoutes(app: Express) {
     try {
       const { email } = signupSchema.parse(req.body);
 
-      // Check if user already exists
-      const existingUser = await (storage as any).getUserByEmail?.(email);
+      // Check if user already exists by email
+      const existingUser = await (storage as any).getUserByEmail?.(email) || 
+                          await (storage as any).getUserByUsername?.(email);
       if (existingUser) {
         return res.status(409).json({ 
           error: "This email is already registered. Please log in or use a different email." 
         });
       }
 
-      // Create new user
-      const user = await storage.createUser({
+      // Create new user with MongoDB storage
+      const firstName = email.split("@")[0];
+      const newUser = await storage.createUser({
         email,
         username: email,
-        password: "",
+        firstName,
+        lastName: "",
+        phone: "",
+        company: "",
+        photo: "",
       } as any);
 
-      res.status(201).json(user);
+      res.status(201).json(newUser);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
@@ -46,12 +52,21 @@ export function registerAuthRoutes(app: Express) {
     try {
       const { email } = loginSchema.parse(req.body);
 
-      // Find user by email
-      const user = await (storage as any).getUserByEmail?.(email);
+      // Find user by email or create if doesn't exist
+      let user = await (storage as any).getUserByEmail?.(email);
+      
       if (!user) {
-        return res.status(401).json({ 
-          error: "User not found. Please sign up first." 
-        });
+        // Auto-create user on login (flexible login)
+        const firstName = email.split("@")[0];
+        user = await storage.createUser({
+          email,
+          username: email,
+          firstName,
+          lastName: "",
+          phone: "",
+          company: "",
+          photo: "",
+        } as any);
       }
 
       res.json(user);
