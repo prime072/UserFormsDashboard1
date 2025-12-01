@@ -6,15 +6,16 @@ import { z } from "zod";
 import { registerAuthRoutes } from "./auth-routes";
 
 function isAuthenticated(req: any, res: any, next: any) {
-  // Check both passport session and x-user-id header
-  if (req.isAuthenticated() || req.headers["x-user-id"]) {
+  // Accept requests with x-user-id header
+  const userId = req.headers["x-user-id"];
+  if (userId) {
     return next();
   }
   res.status(401).json({ message: "Unauthorized" });
 }
 
 function getUserId(req: any): string {
-  return req.user?.id || req.headers["x-user-id"] || "";
+  return req.headers["x-user-id"] || "";
 }
 
 export async function registerRoutes(
