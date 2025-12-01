@@ -20,7 +20,7 @@ export default function ResponsesDashboard() {
   const filteredResponses = useMemo(() => {
     let result = responses;
     
-    if (selectedForm) {
+    if (selectedForm && selectedForm !== "all") {
       result = result.filter(r => r.formId === selectedForm);
     }
     
@@ -227,12 +227,12 @@ export default function ResponsesDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-2 block">Filter by Form</label>
-                <Select value={selectedForm} onValueChange={setSelectedForm}>
+                <Select value={selectedForm || "all"} onValueChange={setSelectedForm}>
                   <SelectTrigger>
                     <SelectValue placeholder="All Forms" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Forms</SelectItem>
+                    <SelectItem value="all">All Forms</SelectItem>
                     {forms.map(form => (
                       <SelectItem key={form.id} value={form.id}>
                         {form.title}
