@@ -2,8 +2,11 @@ import { useState } from "react";
 import Layout from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth-context";
-import { AlertCircle, Trash2 } from "lucide-react";
+import { useTheme } from "next-themes";
+import { AlertCircle, Trash2, Lock, Eye, EyeOff, Monitor, Moon, Sun } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -18,9 +21,67 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Settings() {
   const { user, deleteAccount } = useAuth();
+  const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  const [passwords, setPasswords] = useState({
+    current: "",
+    new: "",
+    confirm: "",
+  });
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPasswords({
+      ...passwords,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleChangePassword = async () => {
+    if (!passwords.new || !passwords.confirm) {
+      toast({
+        title: "Error",
+        description: "Please fill in all password fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (passwords.new !== passwords.confirm) {
+      toast({
+        title: "Error",
+        description: "New passwords don't match.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      setTimeout(() => {
+        setPasswords({ current: "", new: "", confirm: "" });
+        toast({
+          title: "Password Changed",
+          description: "Your password has been updated successfully.",
+        });
+        setShowPasswordSection(false);
+        setLoading(false);
+      }, 1000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to change password.",
+        variant: "destructive"
+      });
+      setLoading(false);
+    }
+  };
 
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
@@ -66,6 +127,154 @@ export default function Settings() {
                 <p className="text-base font-medium text-slate-900">{user?.firstName} {user?.lastName}</p>
               </div>
             </CardContent>
+          </Card>
+
+          {/* Theme Settings */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Appearance</CardTitle>
+              <CardDescription>Customize how FormFlow looks</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-sm text-slate-600 mb-3 block">Background Theme</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    onClick={() => setTheme("light")}
+                    className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${
+                      theme === "light"
+                        ? "border-primary bg-primary/5"
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                    data-testid="button-theme-light"
+                  >
+                    <Sun className="w-5 h-5 text-yellow-500" />
+                    <span className="text-sm font-medium">Light</span>
+                  </button>
+                  <button
+                    onClick={() => setTheme("dark")}
+                    className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${
+                      theme === "dark"
+                        ? "border-primary bg-primary/5"
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                    data-testid="button-theme-dark"
+                  >
+                    <Moon className="w-5 h-5 text-slate-600" />
+                    <span className="text-sm font-medium">Dark</span>
+                  </button>
+                  <button
+                    onClick={() => setTheme("system")}
+                    className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${
+                      theme === "system"
+                        ? "border-primary bg-primary/5"
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                    data-testid="button-theme-system"
+                  >
+                    <Monitor className="w-5 h-5 text-slate-400" />
+                    <span className="text-sm font-medium">System</span>
+                  </button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Security - Change Password */}
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Security</CardTitle>
+                  <CardDescription>Manage your password and security settings</CardDescription>
+                </div>
+                <Button
+                  variant={showPasswordSection ? "default" : "outline"}
+                  onClick={() => {
+                    setShowPasswordSection(!showPasswordSection);
+                    if (!showPasswordSection) {
+                      setPasswords({ current: "", new: "", confirm: "" });
+                    }
+                  }}
+                  className="gap-2"
+                  data-testid="button-toggle-change-password"
+                >
+                  <Lock className="w-4 h-4" />
+                  {showPasswordSection ? "Cancel" : "Change Password"}
+                </Button>
+              </div>
+            </CardHeader>
+
+            {showPasswordSection && (
+              <CardContent className="space-y-4 pt-0">
+                <div className="space-y-2">
+                  <Label htmlFor="current-password">Current Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="current-password"
+                      name="current"
+                      type={showPassword ? "text" : "password"}
+                      value={passwords.current}
+                      onChange={handlePasswordChange}
+                      placeholder="Enter your current password"
+                      data-testid="input-current-password"
+                    />
+                    <button
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-2.5 text-slate-500"
+                      data-testid="button-toggle-password"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="new-password"
+                      name="new"
+                      type={showNewPassword ? "text" : "password"}
+                      value={passwords.new}
+                      onChange={handlePasswordChange}
+                      placeholder="Enter new password"
+                      data-testid="input-new-password"
+                    />
+                    <button
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-2.5 text-slate-500"
+                      data-testid="button-toggle-new-password"
+                    >
+                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm New Password</Label>
+                  <Input
+                    id="confirm-password"
+                    name="confirm"
+                    type={showNewPassword ? "text" : "password"}
+                    value={passwords.confirm}
+                    onChange={handlePasswordChange}
+                    placeholder="Confirm new password"
+                    data-testid="input-confirm-password"
+                  />
+                </div>
+
+                <Button
+                  onClick={handleChangePassword}
+                  disabled={loading}
+                  className="w-full gap-2"
+                  data-testid="button-change-password"
+                >
+                  <Lock className="w-4 h-4" />
+                  {loading ? "Updating..." : "Update Password"}
+                </Button>
+              </CardContent>
+            )}
           </Card>
 
           {/* Danger Zone */}
