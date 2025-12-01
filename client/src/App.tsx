@@ -11,6 +11,7 @@ import FormBuilder from "@/pages/form-builder";
 import PublicFormPage from "@/pages/public-form";
 import SubmissionConfirmation from "@/pages/submission-confirmation";
 import ResponsesView from "@/pages/responses-view";
+import ResponsesAnalytics from "@/pages/responses-analytics";
 import { ReactNode } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -42,6 +43,9 @@ function Router() {
       </Route>
       <Route path="/forms/:id/responses">
         <ProtectedRoute component={ResponsesView} />
+      </Route>
+      <Route path="/forms/:id/analytics">
+        <ProtectedRoute component={ResponsesAnalytics} />
       </Route>
       <Route path="/forms">
         <ProtectedRoute component={Dashboard} />

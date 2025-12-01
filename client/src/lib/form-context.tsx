@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { formatDistanceToNow } from "date-fns";
 import * as XLSX from 'xlsx';
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle } from 'docx';
+import jsPDF from 'jspdf';
 
 export type FieldType = "text" | "number" | "email" | "textarea" | "checkbox" | "select" | "radio" | "date";
 export type OutputFormat = "thank_you" | "whatsapp" | "excel" | "docx" | "pdf";
@@ -211,14 +212,13 @@ export async function generateDocx(formTitle: string, responseData: any) {
     .filter(([key]) => key !== 'id' && key !== 'submittedAt');
 
   const rows = filteredData.map(([key, value]) => {
-    const label = String(key).charAt(0).toUpperCase() + String(key).slice(1);
     return new TableRow({
       children: [
         new TableCell({
-          children: [new Paragraph({ text: label })],
+          children: [new Paragraph(key)],
         }),
         new TableCell({
-          children: [new Paragraph({ text: String(value) })],
+          children: [new Paragraph(String(value || ''))],
         }),
       ],
     });
@@ -226,8 +226,8 @@ export async function generateDocx(formTitle: string, responseData: any) {
 
   const headerRow = new TableRow({
     children: [
-      new TableCell({ children: [new Paragraph({ text: "Field", bold: true })] }),
-      new TableCell({ children: [new Paragraph({ text: "Response", bold: true })] }),
+      new TableCell({ children: [new Paragraph("Field")] }),
+      new TableCell({ children: [new Paragraph("Response")] }),
     ],
   });
 
@@ -239,8 +239,8 @@ export async function generateDocx(formTitle: string, responseData: any) {
   const doc = new Document({
     sections: [{
       children: [
-        new Paragraph({ text: formTitle, size: 28, bold: true }),
-        new Paragraph({ text: `Generated: ${new Date().toLocaleString()}`, size: 20 }),
+        new Paragraph(formTitle),
+        new Paragraph(`Generated: ${new Date().toLocaleString()}`),
         table
       ]
     }]
@@ -257,19 +257,35 @@ export async function generateDocx(formTitle: string, responseData: any) {
 }
 
 export function generatePdf(formTitle: string, responseData: any) {
-  const content = Object.entries(responseData)
+  const doc = new jsPDF();
+  
+  doc.setFontSize(20);
+  doc.text(formTitle, 20, 20);
+  
+  doc.setFontSize(10);
+  doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 30);
+  
+  let yPosition = 45;
+  doc.setFontSize(12);
+  
+  Object.entries(responseData)
     .filter(([key]) => key !== 'id' && key !== 'submittedAt')
-    .map(([key, value]) => `${String(key).charAt(0).toUpperCase() + String(key).slice(1)}: ${value}`)
-    .join('\n');
-
-  const pdfContent = `${formTitle}\nGenerated: ${new Date().toLocaleString()}\n\n${content}`;
-  const blob = new Blob([pdfContent], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${formTitle}-response-${new Date().toISOString().split('T')[0]}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
+    .forEach(([key, value]) => {
+      if (yPosition > 270) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      doc.text(`${key}:`, 20, yPosition);
+      yPosition += 7;
+      const valueText = String(value || '');
+      const wrappedText = doc.splitTextToSize(valueText, 170);
+      doc.setFontSize(11);
+      doc.text(wrappedText, 30, yPosition);
+      yPosition += wrappedText.length * 7 + 5;
+      doc.setFontSize(12);
+    });
+  
+  doc.save(`${formTitle}-response-${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
 export function generateWhatsAppShareMessage(formTitle: string, responseData: any, formUrl: string): string {
