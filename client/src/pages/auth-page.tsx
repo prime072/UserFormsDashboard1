@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import generatedImage from "@assets/generated_images/abstract_geometric_shapes_in_blue_and_indigo_on_white_background.png";
 import { motion } from "framer-motion";
+import { Link } from "wouter";
+import { Shield } from "lucide-react";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -39,7 +41,17 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex bg-background">
+    <div className="min-h-screen w-full flex flex-col bg-background relative">
+      {/* Admin Portal Link - Top Right */}
+      <div className="fixed top-4 right-4 z-50">
+        <a href="/admin/login" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+          <Shield className="w-4 h-4" />
+          Admin Portal
+        </a>
+      </div>
+
+      {/* Main Container */}
+      <div className="flex-1 flex bg-background">
       {/* Left Side - Visual */}
       <div className="hidden lg:flex w-1/2 relative bg-gray-50 items-center justify-center p-12 overflow-hidden">
         <motion.div 
@@ -157,6 +169,7 @@ export default function AuthPage() {
             </Tabs>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );
