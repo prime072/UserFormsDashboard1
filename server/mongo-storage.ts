@@ -184,6 +184,48 @@ export class MongoDBStorage implements IStorage {
 
   async updateForm(id: string, updates: Partial<InsertForm>): Promise<Form | undefined> {
     await this.connect();
+    
+    // Get the old form to compare fields
+    const oldForm = await FormModel.findOne({ id }).lean();
+    if (!oldForm) {
+      const doc = await FormModel.findOneAndUpdate(
+        { id },
+        { ...updates, updatedAt: new Date() },
+        { new: true }
+      ).lean();
+      if (!doc) return undefined;
+      const { _id, ...rest } = doc as any;
+      return rest as Form;
+    }
+
+    // If fields are being updated, handle response updates
+    if (updates.fields && Array.isArray(updates.fields)) {
+      const oldFields = oldForm.fields || [];
+      const newFields = updates.fields;
+      
+      // Get all responses for this form
+      const responses = await ResponseModel.find({ formId: id });
+      
+      // For each response, add default values for new fields
+      for (const response of responses) {
+        const updatedData = { ...response.data };
+        
+        // Add empty/default values for new fields
+        newFields.forEach((newField: any) => {
+          const oldField = oldFields.find((f: any) => f.id === newField.id);
+          if (!oldField && updatedData[newField.id] === undefined) {
+            updatedData[newField.id] = newField.type === 'checkbox' ? false : '';
+          }
+        });
+        
+        // Update response with new field defaults
+        await ResponseModel.findOneAndUpdate(
+          { id: response.id },
+          { data: updatedData }
+        );
+      }
+    }
+
     const doc = await FormModel.findOneAndUpdate(
       { id },
       { ...updates, updatedAt: new Date() },

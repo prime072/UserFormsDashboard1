@@ -23,7 +23,7 @@ export default function AdminLogin() {
 
     if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
       // Store admin session
-      localStorage.setItem("admin_session", JSON.stringify({
+      sessionStorage.setItem("admin_session", JSON.stringify({
         isAdmin: true,
         loginTime: new Date().toISOString()
       }));

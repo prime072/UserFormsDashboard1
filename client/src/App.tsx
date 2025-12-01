@@ -38,7 +38,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
 function AdminProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const [, setLocation] = useLocation();
-  const adminSession = localStorage.getItem("admin_session");
+  const adminSession = sessionStorage.getItem("admin_session");
 
   // All hooks called first, then conditional render
   if (!adminSession) {

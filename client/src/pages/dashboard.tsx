@@ -51,7 +51,7 @@ export default function Dashboard() {
   };
 
   // Get form limit from admin settings
-  const adminUserMetrics = JSON.parse(localStorage.getItem("admin_users_metrics") || "[]");
+  const adminUserMetrics = JSON.parse(sessionStorage.getItem("admin_users_metrics") || "[]");
   const userMetrics = adminUserMetrics.find((m: any) => m.userId === user?.id);
   const formLimit = userMetrics?.formLimit || 10;
   const canCreateForm = forms.length < formLimit;

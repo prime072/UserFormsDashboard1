@@ -28,11 +28,11 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchUsersFromMongoDB = async () => {
       try {
-        const adminMetrics = JSON.parse(localStorage.getItem("admin_users_metrics") || "[]");
+        const adminMetrics = JSON.parse(sessionStorage.getItem("admin_users_metrics") || "[]");
         
         // Fetch users from API
         const response = await fetch("/api/admin/users", {
-          headers: { "x-admin-session": localStorage.getItem("admin_session") || "" },
+          headers: { "x-admin-session": sessionStorage.getItem("admin_session") || "" },
         });
         
         if (!response.ok) {
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
           formLimit: u.formLimit,
           storageLimit: u.storageLimit
         }));
-        localStorage.setItem("admin_users_metrics", JSON.stringify(updatedMetrics));
+        sessionStorage.setItem("admin_users_metrics", JSON.stringify(updatedMetrics));
       } catch (error) {
         console.error("Error fetching users:", error);
         setUsers([]);
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
       formLimit: u.formLimit,
       storageLimit: u.storageLimit
     }));
-    localStorage.setItem("admin_users_metrics", JSON.stringify(metricsData));
+    sessionStorage.setItem("admin_users_metrics", JSON.stringify(metricsData));
     setEditingUserId(null);
     toast({
       title: "User Updated",
@@ -117,7 +117,7 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("admin_session");
+    sessionStorage.removeItem("admin_session");
     toast({
       title: "Logged Out",
       description: "Admin session ended",

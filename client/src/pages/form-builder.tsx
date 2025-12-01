@@ -156,6 +156,7 @@ export default function FormBuilder() {
                           value={field.label} 
                           onChange={(e) => updateField(field.id, { label: e.target.value })}
                           className="font-medium"
+                          data-testid={`input-label-${field.id}`}
                         />
                       </div>
                       <div className="w-full md:w-[200px]">
@@ -180,6 +181,19 @@ export default function FormBuilder() {
                         </Select>
                       </div>
                     </div>
+
+                    {/* Placeholder for text and email fields */}
+                    {(field.type === 'text' || field.type === 'email') && (
+                      <div>
+                        <Label className="text-xs text-slate-500 uppercase tracking-wider mb-1.5 block">Placeholder</Label>
+                        <Input 
+                          value={field.placeholder || ''} 
+                          onChange={(e) => updateField(field.id, { placeholder: e.target.value })}
+                          placeholder={field.type === 'email' ? 'email@example.com' : 'Enter placeholder text'}
+                          data-testid={`input-placeholder-${field.id}`}
+                        />
+                      </div>
+                    )}
                     
                     {/* Options Editor for Select/Radio/Checkbox */}
                     {(field.type === 'select' || field.type === 'radio' || field.type === 'checkbox') && (
