@@ -150,7 +150,7 @@ export default function Profile() {
                   <img src={user.photo} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-4xl font-bold text-primary">
-                    {formData.firstName.charAt(0)}{formData.lastName.charAt(0)}
+                    {formData.firstName.charAt(0).toUpperCase()}{formData.lastName.charAt(0).toUpperCase()}
                   </span>
                 )}
               </div>
