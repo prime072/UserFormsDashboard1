@@ -36,7 +36,15 @@ export default function PublicFormPage() {
   }
 
   const onSubmit = (data: any) => {
-    const { submissionId } = submitResponse(form.id, data);
+    // Convert field IDs to field labels for better readability
+    const formattedData: Record<string, any> = {};
+    form.fields.forEach(field => {
+      if (data[field.id] !== undefined) {
+        formattedData[field.label] = data[field.id];
+      }
+    });
+    
+    const { submissionId } = submitResponse(form.id, formattedData);
     toast({
       title: "Response Submitted",
       description: "Thank you for filling out this form!",

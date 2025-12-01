@@ -58,10 +58,7 @@ export default function ResponsesView() {
     }
   };
 
-  const fieldLabels = form.fields.reduce((acc, field) => {
-    acc[field.id] = field.label;
-    return acc;
-  }, {} as Record<string, string>);
+  // Response data now uses field labels as keys, so we just display them directly
 
   return (
     <Layout>
@@ -90,8 +87,8 @@ export default function ResponsesView() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      {form.fields.map(field => (
-                        <TableHead key={field.id}>{field.label}</TableHead>
+                      {Object.keys(formResponses[0]?.data || {}).map((key) => (
+                        <TableHead key={key}>{key}</TableHead>
                       ))}
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -99,17 +96,17 @@ export default function ResponsesView() {
                   <TableBody>
                     {formResponses.map(response => (
                       <TableRow key={response.id}>
-                        {form.fields.map(field => (
-                          <TableCell key={`${response.id}-${field.id}`}>
+                        {Object.entries(response.data).map(([key, value]) => (
+                          <TableCell key={`${response.id}-${key}`}>
                             {editingId === response.id ? (
                               <Input
-                                value={editData[field.id] || ""}
-                                onChange={(e) => setEditData({ ...editData, [field.id]: e.target.value })}
+                                value={editData[key] || ""}
+                                onChange={(e) => setEditData({ ...editData, [key]: e.target.value })}
                                 className="text-sm"
-                                data-testid={`input-edit-${field.id}`}
+                                data-testid={`input-edit-${key}`}
                               />
                             ) : (
-                              <span className="text-sm">{String(response.data[field.id] || "-")}</span>
+                              <span className="text-sm">{String(value || "-")}</span>
                             )}
                           </TableCell>
                         ))}
