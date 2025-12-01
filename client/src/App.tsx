@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { FormProvider } from "@/lib/form-context";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
+import LandingPage from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import FormBuilder from "@/pages/form-builder";
 import PublicFormPage from "@/pages/public-form";
@@ -50,6 +51,7 @@ function AdminProtectedRoute({ component: Component }: { component: React.Compon
 function Router() {
   return (
     <Switch>
+      <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/dashboard">
         <ProtectedRoute component={Dashboard} />
@@ -87,20 +89,6 @@ function Router() {
       <Route path="/s/:id/confirmation/:submissionId" component={SubmissionConfirmation} />
 
       {/* Default Route */}
-      <Route path="/">
-        {() => {
-          const { user } = useAuth();
-          const [, setLocation] = useLocation();
-          
-          // Use effect pattern instead of direct navigation
-          if (user) {
-            setTimeout(() => setLocation("/dashboard"), 0);
-          } else {
-            setTimeout(() => setLocation("/auth"), 0);
-          }
-          return null;
-        }}
-      </Route>
 
       <Route component={NotFound} />
     </Switch>
