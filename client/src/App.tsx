@@ -21,11 +21,13 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
+  // Call hooks first, then conditionally render
   if (isLoading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
   if (!user) {
-    setLocation("/auth");
-    return null;
+    // Use effect pattern to navigate without early return
+    setTimeout(() => setLocation("/auth"), 0);
+    return <div className="min-h-screen flex items-center justify-center">Redirecting...</div>;
   }
 
   return <Component />;
@@ -35,9 +37,10 @@ function AdminProtectedRoute({ component: Component }: { component: React.Compon
   const [, setLocation] = useLocation();
   const adminSession = localStorage.getItem("admin_session");
 
+  // All hooks called first, then conditional render
   if (!adminSession) {
-    setLocation("/admin/login");
-    return null;
+    setTimeout(() => setLocation("/admin/login"), 0);
+    return <div className="min-h-screen flex items-center justify-center">Redirecting...</div>;
   }
 
   return <Component />;
@@ -84,10 +87,12 @@ function Router() {
         {() => {
           const { user } = useAuth();
           const [, setLocation] = useLocation();
+          
+          // Use effect pattern instead of direct navigation
           if (user) {
-            setLocation("/dashboard");
+            setTimeout(() => setLocation("/dashboard"), 0);
           } else {
-            setLocation("/auth");
+            setTimeout(() => setLocation("/auth"), 0);
           }
           return null;
         }}

@@ -9,7 +9,7 @@ import {
   Plus,
   Menu,
   BarChart3,
-  ShieldAdmin
+  Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -69,7 +69,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
           <Link href="/admin/login">
             <a className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-              <ShieldAdmin className="w-4 h-4" />
+              <Shield className="w-4 h-4" />
               Admin Portal
             </a>
           </Link>
@@ -112,7 +112,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 <div className="p-4 border-t space-y-2">
                   <Link href="/admin/login">
                     <a className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100">
-                      <ShieldAdmin className="w-4 h-4" />
+                      <Shield className="w-4 h-4" />
                       Admin Portal
                     </a>
                   </Link>
