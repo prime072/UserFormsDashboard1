@@ -14,6 +14,7 @@ export type User = {
 type AuthContextType = {
   user: User | null;
   login: (email: string) => void;
+  signup: (email: string) => void;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
   isLoading: boolean;
@@ -44,10 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return allUsers.some((u: User) => u.email === email);
   };
 
-  const login = (email: string) => {
+  const signup = (email: string) => {
     // Check if email already exists
     if (checkEmailExists(email)) {
-      setAuthError("This email is already registered. Please log in or use a different email.");
+      setAuthError("This email is already registered. Please log in instead.");
       return;
     }
 
@@ -70,6 +71,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("formflow_all_users", JSON.stringify(allUsers));
     
     setUser(newUser);
+    setLocation("/dashboard");
+  };
+
+  const login = (email: string) => {
+    // For login, find existing user or create new one
+    const allUsers = JSON.parse(localStorage.getItem("formflow_all_users") || "[]") as User[];
+    const existingUser = allUsers.find((u: User) => u.email === email);
+
+    setAuthError(null);
+    
+    if (existingUser) {
+      // User exists, log them in
+      localStorage.setItem("formflow_user", JSON.stringify(existingUser));
+      setUser(existingUser);
+    } else {
+      // User doesn't exist, create new account
+      const firstName = email.split("@")[0];
+      const newUser: User = { 
+        id: Math.random().toString(36).substr(2, 9),
+        firstName,
+        lastName: "",
+        email,
+        phone: "",
+        company: "",
+        photo: ""
+      };
+      localStorage.setItem("formflow_user", JSON.stringify(newUser));
+      allUsers.push(newUser);
+      localStorage.setItem("formflow_all_users", JSON.stringify(allUsers));
+      setUser(newUser);
+    }
+    
     setLocation("/dashboard");
   };
 
@@ -97,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser, isLoading, authError, clearAuthError: () => setAuthError(null), checkEmailExists }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, updateUser, isLoading, authError, clearAuthError: () => setAuthError(null), checkEmailExists }}>
       {children}
     </AuthContext.Provider>
   );

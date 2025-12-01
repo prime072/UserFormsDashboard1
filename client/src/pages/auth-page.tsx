@@ -21,7 +21,7 @@ const authSchema = z.object({
 });
 
 export default function AuthPage() {
-  const { login, authError, clearAuthError } = useAuth();
+  const { login, signup, authError, clearAuthError } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof authSchema>>({
@@ -32,12 +32,22 @@ export default function AuthPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof authSchema>) {
+  function onLoginSubmit(values: z.infer<typeof authSchema>) {
     setIsLoading(true);
     clearAuthError();
     // Simulate API call delay
     setTimeout(() => {
       login(values.email);
+      setIsLoading(false);
+    }, 500);
+  }
+
+  function onSignupSubmit(values: z.infer<typeof authSchema>) {
+    setIsLoading(true);
+    clearAuthError();
+    // Simulate API call delay
+    setTimeout(() => {
+      signup(values.email);
       setIsLoading(false);
     }, 500);
   }
@@ -99,7 +109,7 @@ export default function AuthPage() {
                   </Alert>
                 )}
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <form onSubmit={form.handleSubmit(onLoginSubmit)} className="space-y-4">
                     <FormField
                       control={form.control}
                       name="email"
@@ -146,7 +156,7 @@ export default function AuthPage() {
                     <Input id="name" placeholder="John Doe" />
                   </div>
                   <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(onSignupSubmit)} className="space-y-4">
                       <FormField
                         control={form.control}
                         name="email"
