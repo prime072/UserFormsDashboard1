@@ -34,6 +34,9 @@ function Router() {
       <Route path="/forms/new">
         <ProtectedRoute component={FormBuilder} />
       </Route>
+      <Route path="/forms/:id/edit">
+        <ProtectedRoute component={FormBuilder} />
+      </Route>
       <Route path="/forms">
         <ProtectedRoute component={Dashboard} />
       </Route>

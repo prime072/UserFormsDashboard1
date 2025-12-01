@@ -2,7 +2,7 @@ import Layout from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Users, FileCheck, TrendingUp } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useForms } from "@/lib/form-context";
 import { formatDistanceToNow } from "date-fns";
 
@@ -15,6 +15,7 @@ const stats = [
 
 export default function Dashboard() {
   const { forms } = useForms();
+  const [, setLocation] = useLocation();
 
   // Calculate real total forms for the stat
   const totalFormsStat = { 
@@ -64,7 +65,11 @@ export default function Dashboard() {
           <h2 className="text-xl font-bold text-slate-900">Recent Forms</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {forms.map((form) => (
-              <Card key={form.id} className="group hover:border-primary/50 transition-colors cursor-pointer">
+              <Card 
+                key={form.id} 
+                className="group hover:border-primary/50 transition-colors cursor-pointer"
+                onClick={() => setLocation(`/forms/${form.id}/edit`)}
+              >
                 <CardHeader>
                   <div className="flex justify-between items-start mb-2">
                     <div className={`px-2 py-1 rounded-full text-xs font-medium ${

@@ -24,6 +24,7 @@ export interface Form {
 type FormContextType = {
   forms: Form[];
   addForm: (title: string, fields: FormField[]) => void;
+  updateForm: (id: string, title: string, fields: FormField[]) => void;
   deleteForm: (id: string) => void;
   getForm: (id: string) => Form | undefined;
 };
@@ -87,6 +88,16 @@ export function FormProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("formflow_forms", JSON.stringify(updatedForms));
   };
 
+  const updateForm = (id: string, title: string, fields: FormField[]) => {
+    const updatedForms = forms.map(f => 
+      f.id === id 
+        ? { ...f, title, fields, lastUpdated: new Date().toISOString() }
+        : f
+    );
+    setForms(updatedForms);
+    localStorage.setItem("formflow_forms", JSON.stringify(updatedForms));
+  };
+
   const deleteForm = (id: string) => {
     const updatedForms = forms.filter(f => f.id !== id);
     setForms(updatedForms);
@@ -98,7 +109,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <FormContext.Provider value={{ forms, addForm, deleteForm, getForm }}>
+    <FormContext.Provider value={{ forms, addForm, updateForm, deleteForm, getForm }}>
       {children}
     </FormContext.Provider>
   );

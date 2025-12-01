@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,20 +7,34 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Trash2, Plus, GripVertical, ChevronLeft, Save } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useForms, FormField, FieldType } from "@/lib/form-context";
 
 export default function FormBuilder() {
   const [, setLocation] = useLocation();
+  const [match, params] = useRoute("/forms/:id/edit");
   const { toast } = useToast();
-  const { addForm } = useForms();
+  const { addForm, getForm, updateForm } = useForms();
   
+  const isEditing = match && params?.id;
+  const formId = params?.id;
+
   const [title, setTitle] = useState("Untitled Form");
   const [fields, setFields] = useState<FormField[]>([
     { id: "1", type: "text", label: "Full Name", placeholder: "John Doe", required: true },
     { id: "2", type: "email", label: "Email Address", placeholder: "john@example.com", required: true }
   ]);
+
+  useEffect(() => {
+    if (isEditing && formId) {
+      const existingForm = getForm(formId);
+      if (existingForm) {
+        setTitle(existingForm.title);
+        setFields(existingForm.fields.length > 0 ? existingForm.fields : fields);
+      }
+    }
+  }, [isEditing, formId]);
 
   const addField = () => {
     const newField: FormField = {
@@ -41,13 +55,19 @@ export default function FormBuilder() {
   };
 
   const handleSave = () => {
-    // Save to context/localStorage
-    addForm(title, fields);
-
-    toast({
-      title: "Form Saved",
-      description: "Your form has been saved successfully.",
-    });
+    if (isEditing && formId) {
+      updateForm(formId, title, fields);
+      toast({
+        title: "Form Updated",
+        description: "Your changes have been saved.",
+      });
+    } else {
+      addForm(title, fields);
+      toast({
+        title: "Form Created",
+        description: "Your form has been created successfully.",
+      });
+    }
     
     setTimeout(() => setLocation("/dashboard"), 1000);
   };
@@ -73,7 +93,7 @@ export default function FormBuilder() {
             <Button variant="outline" onClick={() => setLocation("/dashboard")}>Cancel</Button>
             <Button onClick={handleSave} className="gap-2">
               <Save className="w-4 h-4" />
-              Save Form
+              {isEditing ? "Update Form" : "Save Form"}
             </Button>
           </div>
         </div>
