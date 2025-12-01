@@ -108,14 +108,21 @@ export class MongoDBStorage implements IStorage {
 
   async deleteUser(id: string): Promise<boolean> {
     await this.connect();
-    // Delete user
-    await UserModel.deleteOne({ id });
+    // Get all user's forms first (before deleting them)
+    const userForms = await FormModel.find({ userId: id });
+    const formIds = userForms.map((f: any) => f.id);
+    
+    // Delete all responses for user's forms
+    if (formIds.length > 0) {
+      await ResponseModel.deleteMany({ formId: { $in: formIds } });
+    }
+    
     // Delete all user's forms
     await FormModel.deleteMany({ userId: id });
-    // Delete all responses for user's forms
-    const userForms = await FormModel.find({ userId: id });
-    const formIds = userForms.map(f => f.id);
-    await ResponseModel.deleteMany({ formId: { $in: formIds } });
+    
+    // Delete the user
+    await UserModel.deleteOne({ id });
+    
     return true;
   }
 
