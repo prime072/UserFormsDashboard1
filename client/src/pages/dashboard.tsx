@@ -6,6 +6,7 @@ import { Link, useLocation } from "wouter";
 import { useForms } from "@/lib/form-context";
 import { useAuth } from "@/lib/auth-context";
 import { formatDistanceToNow } from "date-fns";
+import { useState, useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,32 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [responseStats, setResponseStats] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (user?.id) {
+      refreshResponseCounts();
+    }
+  }, [user?.id]);
+
+  const refreshResponseCounts = async () => {
+    if (!user?.id) return;
+    try {
+      const stats: Record<string, number> = {};
+      for (const form of forms) {
+        const response = await fetch(`/api/forms/${form.id}/stats`, {
+          headers: { "x-user-id": user.id },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          stats[form.id] = data.responseCount || 0;
+        }
+      }
+      setResponseStats(stats);
+    } catch (error) {
+      console.error("Error fetching response stats:", error);
+    }
+  };
 
   // Get form limit from admin settings
   const adminUserMetrics = JSON.parse(localStorage.getItem("admin_users_metrics") || "[]");
@@ -30,8 +57,8 @@ export default function Dashboard() {
   const canCreateForm = forms.length < formLimit;
   const formsOverLimit = Math.max(0, forms.length - formLimit);
 
-  // Calculate total responses from all forms
-  const totalResponses = forms.reduce((sum, form) => sum + (form.responses || 0), 0);
+  // Calculate total responses from response stats
+  const totalResponses = Object.values(responseStats).reduce((sum, count) => sum + count, 0);
   
   const totalFormsStat = { 
     label: "Total Forms", 
@@ -178,11 +205,11 @@ export default function Dashboard() {
                     </DropdownMenu>
                   </div>
                   <CardTitle className="text-lg group-hover:text-primary transition-colors truncate">{form.title}</CardTitle>
-                  <CardDescription>{form.responses || 0} responses collected</CardDescription>
+                  <CardDescription>{responseStats[form.id] || 0} responses collected</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1">
                   <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(form.responses || 0, 100)}%` }}></div>
+                    <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(responseStats[form.id] || 0, 100)}%` }}></div>
                   </div>
                   <p className="text-xs text-slate-400 mt-4">
                     Updated {formatDistanceToNow(new Date(form.lastUpdated || new Date()), { addSuffix: true })}
