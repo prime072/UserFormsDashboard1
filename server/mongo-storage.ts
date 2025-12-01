@@ -13,6 +13,9 @@ const userSchema = new mongoose.Schema({
   photo: String,
   password: String,
   username: String,
+  status: { type: String, default: "active" },
+  totalForms: { type: Number, default: 0 },
+  totalResponses: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
@@ -90,6 +93,22 @@ export class MongoDBStorage implements IStorage {
     const doc = await UserModel.findOneAndUpdate(
       { id },
       { ...updates, updatedAt: new Date() },
+      { new: true }
+    ).lean();
+    if (!doc) return undefined;
+    const { _id, ...rest } = doc as any;
+    return rest as User;
+  }
+
+  async updateUserMetrics(id: string): Promise<User | undefined> {
+    await this.connect();
+    const userForms = await FormModel.countDocuments({ userId: id });
+    const formIds = (await FormModel.find({ userId: id }, { id: 1 }).lean()).map((f: any) => f.id);
+    const totalResponses = formIds.length > 0 ? await ResponseModel.countDocuments({ formId: { $in: formIds } }) : 0;
+    
+    const doc = await UserModel.findOneAndUpdate(
+      { id },
+      { totalForms: userForms, totalResponses, updatedAt: new Date() },
       { new: true }
     ).lean();
     if (!doc) return undefined;

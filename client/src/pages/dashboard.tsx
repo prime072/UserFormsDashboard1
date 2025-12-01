@@ -41,24 +41,9 @@ export default function Dashboard() {
     }
   }, [user?.id]);
 
-  const refreshResponseCounts = async () => {
-    if (!user?.id) return;
-    try {
-      const stats: Record<string, number> = {};
-      for (const form of forms) {
-        const response = await fetch(`/api/forms/${form.id}/stats`, {
-          headers: { "x-user-id": user.id },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          stats[form.id] = data.responseCount || 0;
-        }
-      }
-      setResponseStats(stats);
-    } catch (error) {
-      console.error("Error fetching response stats:", error);
-    }
-  };
+  // Use cached metrics from user object instead of calculating each time
+  const cachedTotalResponses = user?.totalResponses || 0;
+  const cachedTotalForms = user?.totalForms || forms.length;
 
   // Get form limit from admin settings
   const adminUserMetrics = JSON.parse(sessionStorage.getItem("admin_users_metrics") || "[]");
@@ -71,12 +56,9 @@ export default function Dashboard() {
     setShowSuspensionDialog(false);
   };
 
-  // Calculate total responses from response stats
-  const totalResponses = Object.values(responseStats).reduce((sum, count) => sum + count, 0);
-  
   const totalFormsStat = { 
     label: "Total Forms", 
-    value: forms.length.toString(), 
+    value: cachedTotalForms.toString(), 
     icon: FileCheck, 
     color: "text-blue-600", 
     bg: "bg-blue-100" 
@@ -84,7 +66,7 @@ export default function Dashboard() {
   
   const totalResponsesStat = {
     label: "Total Responses",
-    value: totalResponses.toString(),
+    value: cachedTotalResponses.toString(),
     icon: Users,
     color: "text-purple-600",
     bg: "bg-purple-100"

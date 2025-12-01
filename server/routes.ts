@@ -65,6 +65,8 @@ export async function registerRoutes(
         userId,
       });
       const form = await storage.createForm(validatedData);
+      // Update user metrics
+      await (storage as any).updateUserMetrics?.(userId);
       res.status(201).json(form);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -116,6 +118,8 @@ export async function registerRoutes(
       }
       
       await storage.deleteForm(req.params.id);
+      // Update user metrics
+      await (storage as any).updateUserMetrics?.(userId);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting form:", error);
@@ -134,6 +138,8 @@ export async function registerRoutes(
       }
       
       const response = await storage.createResponse(validatedData);
+      // Update user metrics
+      await (storage as any).updateUserMetrics?.(form.userId);
       res.status(201).json(response);
     } catch (error) {
       if (error instanceof z.ZodError) {

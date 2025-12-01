@@ -80,14 +80,21 @@ export function registerAuthRoutes(app: Express) {
         return res.status(401).json({ error: "Invalid email or password" });
       }
 
+      // Update and fetch metrics
+      const userWithMetrics = await (storage as any).updateUserMetrics?.(user.id);
+      const responseUser = userWithMetrics || user;
+
       res.json({
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        phone: user.phone,
-        company: user.company,
-        photo: user.photo,
+        id: responseUser.id,
+        email: responseUser.email,
+        firstName: responseUser.firstName,
+        lastName: responseUser.lastName,
+        phone: responseUser.phone,
+        company: responseUser.company,
+        photo: responseUser.photo,
+        status: responseUser.status,
+        totalForms: responseUser.totalForms || 0,
+        totalResponses: responseUser.totalResponses || 0,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {

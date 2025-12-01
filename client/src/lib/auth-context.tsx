@@ -10,6 +10,8 @@ export type User = {
   company?: string;
   photo?: string;
   status?: "active" | "suspended";
+  totalForms?: number;
+  totalResponses?: number;
 };
 
 type AuthContextType = {
