@@ -24,36 +24,59 @@ export default function AdminDashboard() {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<UserMetrics>>({});
 
-  // Initialize and update user data in real-time
+  // Initialize and update user data from MongoDB
   useEffect(() => {
-    const allUsers = JSON.parse(localStorage.getItem("formflow_all_users") || "[]") as User[];
-    const adminMetrics = JSON.parse(localStorage.getItem("admin_users_metrics") || "[]");
+    const fetchUsersFromMongoDB = async () => {
+      try {
+        const adminMetrics = JSON.parse(localStorage.getItem("admin_users_metrics") || "[]");
+        
+        // Fetch users from API
+        const response = await fetch("/api/admin/users", {
+          headers: { "x-admin-session": localStorage.getItem("admin_session") || "" },
+        });
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch users");
+        }
 
-    // Calculate storage for each user
-    const storagePerUser = Math.round(JSON.stringify(forms).length / (allUsers.length || 1) / 1024);
+        const allUsers = await response.json();
+        
+        if (allUsers.length === 0) {
+          setUsers([]);
+          return;
+        }
 
-    const updatedUsers: UserMetrics[] = allUsers.map(user => {
-      const existingMetrics = adminMetrics.find((m: any) => m.userId === user.id);
-      return {
-        ...user,
-        formsCount: forms.length,
-        storageUsed: storagePerUser,
-        formLimit: existingMetrics?.formLimit || 10,
-        storageLimit: existingMetrics?.storageLimit || 10240
-      };
-    });
+        // Calculate storage for each user
+        const storagePerUser = Math.round(JSON.stringify(forms).length / (allUsers.length || 1) / 1024);
 
-    setUsers(updatedUsers);
+        const updatedUsers: UserMetrics[] = allUsers.map((user: any) => {
+          const existingMetrics = adminMetrics.find((m: any) => m.userId === user.id);
+          return {
+            ...user,
+            storageUsed: storagePerUser,
+            formLimit: existingMetrics?.formLimit || 10,
+            storageLimit: existingMetrics?.storageLimit || 10240
+          };
+        });
+
+        setUsers(updatedUsers);
+        
+        // Sync metrics to localStorage
+        const updatedMetrics = updatedUsers.map(u => ({
+          userId: u.id,
+          formsCount: u.formsCount,
+          storageUsed: u.storageUsed,
+          formLimit: u.formLimit,
+          storageLimit: u.storageLimit
+        }));
+        localStorage.setItem("admin_users_metrics", JSON.stringify(updatedMetrics));
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        setUsers([]);
+      }
+    };
     
-    // Sync back to localStorage
-    const updatedMetrics = updatedUsers.map(u => ({
-      userId: u.id,
-      formsCount: u.formsCount,
-      storageUsed: u.storageUsed,
-      formLimit: u.formLimit,
-      storageLimit: u.storageLimit
-    }));
-    localStorage.setItem("admin_users_metrics", JSON.stringify(updatedMetrics));
+    fetchUsersFromMongoDB();
   }, [forms]);
 
   const stats = useMemo(() => {

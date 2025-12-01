@@ -97,6 +97,15 @@ export class MongoDBStorage implements IStorage {
     return rest as User;
   }
 
+  async getAllUsers(): Promise<User[]> {
+    await this.connect();
+    const docs = await UserModel.find({}).lean();
+    return docs.map((doc: any) => {
+      const { _id, ...rest } = doc;
+      return rest as User;
+    });
+  }
+
   async createUser(user: InsertUser): Promise<User> {
     await this.connect();
     const id = Math.random().toString(36).substr(2, 9);

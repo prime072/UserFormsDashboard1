@@ -201,5 +201,57 @@ export async function registerRoutes(
     }
   });
 
+  // Admin routes
+  app.get("/api/admin/users", async (req, res) => {
+    try {
+      const adminSession = req.headers["x-admin-session"];
+      if (!adminSession) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const allUsers = await (storage as any).getAllUsers?.();
+      if (!allUsers) {
+        return res.json([]);
+      }
+
+      // Fetch forms and responses for each user
+      const usersWithData = await Promise.all(
+        allUsers.map(async (user: any) => {
+          const userForms = await storage.getFormsByUserId(user.id);
+          return {
+            ...user,
+            formsCount: userForms.length,
+          };
+        })
+      );
+
+      res.json(usersWithData);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/admin/stats", async (req, res) => {
+    try {
+      const adminSession = req.headers["x-admin-session"];
+      if (!adminSession) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const allUsers = await (storage as any).getAllUsers?.();
+      const userCount = allUsers?.length || 0;
+
+      res.json({
+        totalUsers: userCount,
+        totalForms: 0,
+        totalResponses: 0
+      });
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+      res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
   return httpServer;
 }
