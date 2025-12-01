@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,6 +99,17 @@ export default function AdminLogin() {
           <p className="text-xs text-slate-500 text-center mt-4">
             Admin login only. Unauthorized access is prohibited.
           </p>
+
+          <div className="mt-6 pt-4 border-t border-slate-200">
+            <p className="text-xs text-slate-600 text-center mb-3">
+              Not an admin?
+            </p>
+            <Link href="/auth">
+              <a className="block w-full px-4 py-2 text-center text-sm font-medium text-primary hover:bg-primary/10 rounded-md transition-colors" data-testid="link-user-login">
+                Go to User Login
+              </a>
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
