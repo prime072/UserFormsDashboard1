@@ -32,14 +32,7 @@ export default function Dashboard() {
   const { user, isSuspended, logout } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [responseStats, setResponseStats] = useState<Record<string, number>>({});
   const [showSuspensionDialog, setShowSuspensionDialog] = useState(isSuspended);
-
-  useEffect(() => {
-    if (user?.id) {
-      refreshResponseCounts();
-    }
-  }, [user?.id]);
 
   // Use cached metrics from user object instead of calculating each time
   const cachedTotalResponses = user?.totalResponses || 0;
@@ -237,7 +230,7 @@ export default function Dashboard() {
               </div>
               <div className="space-y-2">
                 <p className="text-sm text-slate-600">Total Responses</p>
-                <p className="text-2xl font-bold">{totalResponses}</p>
+                <p className="text-2xl font-bold">{cachedTotalResponses}</p>
               </div>
               <div className="text-xs text-slate-500">
                 {canCreateForm ? "You can create more forms" : "You've reached your form limit"}
