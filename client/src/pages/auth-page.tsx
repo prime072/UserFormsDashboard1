@@ -117,10 +117,10 @@ export default function AuthPage() {
                     <AlertDescription>{authError}</AlertDescription>
                   </Alert>
                 )}
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onLoginSubmit)} className="space-y-4">
+                <Form {...loginForm}>
+                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                     <FormField
-                      control={form.control}
+                      control={loginForm.control}
                       name="email"
                       render={({ field }) => (
                         <FormItem>
@@ -133,7 +133,7 @@ export default function AuthPage() {
                       )}
                     />
                     <FormField
-                      control={form.control}
+                      control={loginForm.control}
                       name="password"
                       render={({ field }) => (
                         <FormItem>
@@ -159,45 +159,52 @@ export default function AuthPage() {
                     <AlertDescription>{authError}</AlertDescription>
                   </Alert>
                 )}
-                <div className="space-y-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" placeholder="John Doe" />
-                  </div>
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSignupSubmit)} className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                              <Input placeholder="name@example.com" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormControl>
-                              <Input type="password" placeholder="Create a password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? "Creating account..." : "Create Account"}
-                      </Button>
-                    </form>
-                  </Form>
-                </div>
+                <Form {...signupForm}>
+                  <form onSubmit={signupForm.handleSubmit(onSignupSubmit)} className="space-y-4">
+                    <FormField
+                      control={signupForm.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="John Doe" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={signupForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input placeholder="name@example.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={signupForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="Create a password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? "Creating account..." : "Create Account"}
+                    </Button>
+                  </form>
+                </Form>
               </TabsContent>
             </Tabs>
           </CardContent>
