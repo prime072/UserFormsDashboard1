@@ -6,10 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Plus, GripVertical, ChevronLeft, Save } from "lucide-react";
+import { Trash2, Plus, GripVertical, ChevronLeft, Save, X } from "lucide-react";
 import { Link, useLocation, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useForms, FormField, FieldType } from "@/lib/form-context";
+import { Badge } from "@/components/ui/badge";
 
 export default function FormBuilder() {
   const [, setLocation] = useLocation();
@@ -41,7 +42,8 @@ export default function FormBuilder() {
       id: Math.random().toString(36).substr(2, 9),
       type: "text",
       label: "New Field",
-      required: false
+      required: false,
+      options: []
     };
     setFields([...fields, newField]);
   };
@@ -52,6 +54,24 @@ export default function FormBuilder() {
 
   const removeField = (id: string) => {
     setFields(fields.filter(f => f.id !== id));
+  };
+
+  const addOption = (fieldId: string, optionText: string) => {
+    if (!optionText.trim()) return;
+    const field = fields.find(f => f.id === fieldId);
+    if (field) {
+      const currentOptions = field.options || [];
+      updateField(fieldId, { options: [...currentOptions, optionText] });
+    }
+  };
+
+  const removeOption = (fieldId: string, optionIndex: number) => {
+    const field = fields.find(f => f.id === fieldId);
+    if (field && field.options) {
+      const newOptions = [...field.options];
+      newOptions.splice(optionIndex, 1);
+      updateField(fieldId, { options: newOptions });
+    }
   };
 
   const handleSave = () => {
@@ -135,10 +155,60 @@ export default function FormBuilder() {
                             <SelectItem value="textarea">Long Text</SelectItem>
                             <SelectItem value="checkbox">Checkbox</SelectItem>
                             <SelectItem value="select">Dropdown</SelectItem>
+                            <SelectItem value="radio">Radio Group</SelectItem>
+                            <SelectItem value="date">Date Picker</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
+                    
+                    {/* Options Editor for Select/Radio */}
+                    {(field.type === 'select' || field.type === 'radio') && (
+                      <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2">
+                        <Label className="text-xs text-slate-500 uppercase tracking-wider mb-2 block">Options</Label>
+                        <div className="space-y-2 mb-3">
+                          {field.options?.map((option, optIndex) => (
+                            <div key={optIndex} className="flex items-center gap-2">
+                              <div className="w-4 h-4 rounded-full border border-slate-300 bg-white" />
+                              <span className="text-sm flex-1">{option}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-6 w-6 text-slate-400 hover:text-red-500"
+                                onClick={() => removeOption(field.id, optIndex)}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <Input 
+                            placeholder="Add an option..." 
+                            className="h-8 text-sm bg-white" 
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addOption(field.id, e.currentTarget.value);
+                                e.currentTarget.value = '';
+                              }
+                            }}
+                          />
+                          <Button 
+                            variant="secondary" 
+                            size="sm"
+                            className="h-8"
+                            onClick={(e) => {
+                              const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                              addOption(field.id, input.value);
+                              input.value = '';
+                            }}
+                          >
+                            Add
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Preview Area */}
                     <div className="bg-slate-50 p-4 rounded-lg border border-dashed border-slate-200 mt-4">
@@ -150,6 +220,7 @@ export default function FormBuilder() {
                       {field.type === 'text' && <Input disabled placeholder={field.placeholder || "Short answer text"} />}
                       {field.type === 'email' && <Input disabled placeholder="email@example.com" />}
                       {field.type === 'number' && <Input disabled type="number" placeholder="0" />}
+                      {field.type === 'date' && <Input disabled type="date" />}
                       {field.type === 'textarea' && <div className="h-20 w-full bg-white border rounded-md px-3 py-2 text-sm text-slate-400">Long answer text</div>}
                       {field.type === 'checkbox' && (
                         <div className="flex items-center space-x-2">
@@ -161,6 +232,16 @@ export default function FormBuilder() {
                         <div className="h-10 w-full bg-white border rounded-md px-3 flex items-center text-slate-400 justify-between">
                           <span>Select an option</span>
                           <ChevronLeft className="w-4 h-4 -rotate-90" />
+                        </div>
+                      )}
+                      {field.type === 'radio' && (
+                        <div className="space-y-2">
+                          {(field.options?.length ? field.options : ['Option 1', 'Option 2']).map((opt, i) => (
+                            <div key={i} className="flex items-center space-x-2 opacity-50">
+                              <div className="w-4 h-4 rounded-full border border-slate-400" />
+                              <span className="text-sm">{opt}</span>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>

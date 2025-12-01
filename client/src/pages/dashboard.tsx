@@ -1,10 +1,19 @@
 import Layout from "@/components/layout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, FileCheck, TrendingUp } from "lucide-react";
+import { Plus, Users, FileCheck, TrendingUp, Edit, ExternalLink, Share2, MoreHorizontal, Trash2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useForms } from "@/lib/form-context";
 import { formatDistanceToNow } from "date-fns";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 // Mock data for stats (since we don't track responses yet)
 const stats = [
@@ -14,8 +23,9 @@ const stats = [
 ];
 
 export default function Dashboard() {
-  const { forms } = useForms();
+  const { forms, deleteForm } = useForms();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   // Calculate real total forms for the stat
   const totalFormsStat = { 
@@ -24,6 +34,28 @@ export default function Dashboard() {
   };
 
   const displayStats = [totalFormsStat, stats[1], stats[2]];
+
+  const handleShare = (e: React.MouseEvent, formId: string) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}/s/${formId}`;
+    navigator.clipboard.writeText(url);
+    toast({
+      title: "Link Copied",
+      description: "Form link copied to clipboard!",
+    });
+  };
+
+  const handleDelete = (e: React.MouseEvent, formId: string) => {
+    e.stopPropagation();
+    if (confirm("Are you sure you want to delete this form?")) {
+      deleteForm(formId);
+      toast({
+        title: "Form Deleted",
+        description: "The form has been removed.",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <Layout>
@@ -67,7 +99,7 @@ export default function Dashboard() {
             {forms.map((form) => (
               <Card 
                 key={form.id} 
-                className="group hover:border-primary/50 transition-colors cursor-pointer"
+                className="group hover:border-primary/50 transition-colors cursor-pointer flex flex-col"
                 onClick={() => setLocation(`/forms/${form.id}/edit`)}
               >
                 <CardHeader>
@@ -77,25 +109,55 @@ export default function Dashboard() {
                     }`}>
                       {form.status}
                     </div>
-                    <span className="text-xs text-slate-400">
-                      {formatDistanceToNow(new Date(form.lastUpdated), { addSuffix: true })}
-                    </span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 -mt-1 -mr-2 text-slate-400 hover:text-slate-600" onClick={(e) => e.stopPropagation()}>
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setLocation(`/forms/${form.id}/edit`); }}>
+                          <Edit className="w-4 h-4 mr-2" /> Edit Form
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => handleShare(e, form.id)}>
+                          <Share2 className="w-4 h-4 mr-2" /> Share Link
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`/s/${form.id}`, '_blank'); }}>
+                          <ExternalLink className="w-4 h-4 mr-2" /> View Live
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-red-600" onClick={(e) => handleDelete(e, form.id)}>
+                          <Trash2 className="w-4 h-4 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  <CardTitle className="text-lg group-hover:text-primary transition-colors">{form.title}</CardTitle>
+                  <CardTitle className="text-lg group-hover:text-primary transition-colors truncate">{form.title}</CardTitle>
                   <CardDescription>{form.responses} responses collected</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex-1">
                   <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                    {/* Random progress bar for visual effect since we don't have real goals yet */}
-                    <div className="h-full bg-primary rounded-full" style={{ width: `${Math.random() * 100}%` }}></div>
+                    <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(form.responses, 100)}%` }}></div>
                   </div>
+                  <p className="text-xs text-slate-400 mt-4">
+                    Updated {formatDistanceToNow(new Date(form.lastUpdated), { addSuffix: true })}
+                  </p>
                 </CardContent>
+                <CardFooter className="pt-0 gap-2 border-t bg-slate-50/50 p-4">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); setLocation(`/forms/${form.id}/edit`); }}>
+                    <Edit className="w-3 h-3 mr-2" /> Edit
+                  </Button>
+                  <Button size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); window.open(`/s/${form.id}`, '_blank'); }}>
+                    <ExternalLink className="w-3 h-3 mr-2" /> View
+                  </Button>
+                </CardFooter>
               </Card>
             ))}
             
             {/* Create New Card */}
             <Link href="/forms/new">
-              <div className="h-full border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center p-6 text-slate-400 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all cursor-pointer min-h-[200px]">
+              <div className="h-full border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center p-6 text-slate-400 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all cursor-pointer min-h-[250px]">
                 <Plus className="w-10 h-10 mb-2 opacity-50" />
                 <span className="font-medium">Create New Form</span>
               </div>

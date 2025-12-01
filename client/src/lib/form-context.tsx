@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { formatDistanceToNow } from "date-fns";
 
-export type FieldType = "text" | "number" | "email" | "textarea" | "checkbox" | "select";
+export type FieldType = "text" | "number" | "email" | "textarea" | "checkbox" | "select" | "radio" | "date";
 
 export interface FormField {
   id: string;
@@ -27,6 +27,7 @@ type FormContextType = {
   updateForm: (id: string, title: string, fields: FormField[]) => void;
   deleteForm: (id: string) => void;
   getForm: (id: string) => Form | undefined;
+  submitResponse: (formId: string, data: any) => void;
 };
 
 const FormContext = createContext<FormContextType | null>(null);
@@ -108,8 +109,25 @@ export function FormProvider({ children }: { children: ReactNode }) {
     return forms.find(f => f.id === id);
   };
 
+  const submitResponse = (formId: string, data: any) => {
+    // In a real app, this would send to backend
+    // Here we just update the response count for the mock
+    const updatedForms = forms.map(f => 
+      f.id === formId 
+        ? { ...f, responses: f.responses + 1 }
+        : f
+    );
+    setForms(updatedForms);
+    localStorage.setItem("formflow_forms", JSON.stringify(updatedForms));
+    
+    // We could also store the actual response data in a separate localStorage key
+    const responsesKey = `formflow_responses_${formId}`;
+    const existingResponses = JSON.parse(localStorage.getItem(responsesKey) || "[]");
+    localStorage.setItem(responsesKey, JSON.stringify([...existingResponses, { ...data, submittedAt: new Date().toISOString() }]));
+  };
+
   return (
-    <FormContext.Provider value={{ forms, addForm, updateForm, deleteForm, getForm }}>
+    <FormContext.Provider value={{ forms, addForm, updateForm, deleteForm, getForm, submitResponse }}>
       {children}
     </FormContext.Provider>
   );

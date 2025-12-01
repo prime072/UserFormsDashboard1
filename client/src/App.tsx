@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import FormBuilder from "@/pages/form-builder";
+import PublicFormPage from "@/pages/public-form";
 import { ReactNode } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -41,6 +42,9 @@ function Router() {
         <ProtectedRoute component={Dashboard} />
       </Route>
       
+      {/* Public Route - No Protection needed */}
+      <Route path="/s/:id" component={PublicFormPage} />
+
       {/* Default Route */}
       <Route path="/">
         {() => {
