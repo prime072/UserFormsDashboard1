@@ -21,10 +21,31 @@ import { AlertCircle } from "lucide-react";
 
 export default function MyForms() {
   const { forms, deleteForm } = useForms();
-  const { user } = useAuth();
+  const { user, isSuspended } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [responseStats, setResponseStats] = useState<Record<string, number>>({});
+
+  if (isSuspended) {
+    return (
+      <Layout>
+        <div className="max-w-6xl mx-auto space-y-8">
+          <div className="text-center py-16 space-y-4">
+            <Lock className="w-16 h-16 text-red-600 mx-auto" />
+            <h1 className="text-3xl font-display font-bold text-slate-900">Account Suspended</h1>
+            <p className="text-slate-600 max-w-md mx-auto">
+              Your account has been suspended by the administrator. You cannot access the forms section. 
+              Please contact the admin for assistance.
+            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-slate-500">You can still:</p>
+              <p className="text-sm font-medium text-slate-700">• View and download form responses</p>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   useEffect(() => {
     if (user?.id) {

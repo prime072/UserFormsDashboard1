@@ -6,10 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Plus, GripVertical, ChevronLeft, Save, X } from "lucide-react";
+import { Trash2, Plus, GripVertical, ChevronLeft, Save, X, Lock } from "lucide-react";
 import { Link, useLocation, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useForms, FormField, FieldType, OutputFormat } from "@/lib/form-context";
+import { useAuth } from "@/lib/auth-context";
 import { Badge } from "@/components/ui/badge";
 import OutputSettings from "@/components/output-settings";
 
@@ -18,6 +19,7 @@ export default function FormBuilder() {
   const [match, params] = useRoute("/forms/:id/edit");
   const { toast } = useToast();
   const { addForm, getForm, updateForm } = useForms();
+  const { isSuspended } = useAuth();
   
   const isEditing = match && params?.id;
   const formId = params?.id;
@@ -102,6 +104,22 @@ export default function FormBuilder() {
       });
     }
   };
+
+  if (isSuspended) {
+    return (
+      <Layout>
+        <div className="max-w-2xl mx-auto py-16 text-center space-y-4">
+          <Lock className="w-16 h-16 text-red-600 mx-auto" />
+          <h1 className="text-2xl font-display font-bold text-slate-900">Account Suspended</h1>
+          <p className="text-slate-600">You cannot create or edit forms while your account is suspended.</p>
+          <Button onClick={() => setLocation("/dashboard")} variant="outline">
+            <ChevronLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

@@ -1,7 +1,7 @@
 import Layout from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, FileCheck, TrendingUp, Edit, ExternalLink, Share2, MoreHorizontal, Trash2, AlertCircle } from "lucide-react";
+import { Plus, Users, FileCheck, TrendingUp, Edit, ExternalLink, Share2, MoreHorizontal, Trash2, AlertCircle, Lock } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useForms } from "@/lib/form-context";
 import { useAuth } from "@/lib/auth-context";
@@ -17,13 +17,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 export default function Dashboard() {
   const { forms, responses, deleteForm } = useForms();
-  const { user } = useAuth();
+  const { user, isSuspended, logout } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [responseStats, setResponseStats] = useState<Record<string, number>>({});
+  const [showSuspensionDialog, setShowSuspensionDialog] = useState(isSuspended);
 
   useEffect(() => {
     if (user?.id) {
@@ -54,8 +64,12 @@ export default function Dashboard() {
   const adminUserMetrics = JSON.parse(sessionStorage.getItem("admin_users_metrics") || "[]");
   const userMetrics = adminUserMetrics.find((m: any) => m.userId === user?.id);
   const formLimit = userMetrics?.formLimit || 10;
-  const canCreateForm = forms.length < formLimit;
+  const canCreateForm = forms.length < formLimit && !isSuspended;
   const formsOverLimit = Math.max(0, forms.length - formLimit);
+
+  const handleSuspensionDialogClose = () => {
+    setShowSuspensionDialog(false);
+  };
 
   // Calculate total responses from response stats
   const totalResponses = Object.values(responseStats).reduce((sum, count) => sum + count, 0);
@@ -102,10 +116,41 @@ export default function Dashboard() {
 
   return (
     <Layout>
+      <AlertDialog open={showSuspensionDialog} onOpenChange={setShowSuspensionDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-red-600" />
+              Account Suspended
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4 mt-4">
+              <p>Your account has been suspended by the administrator.</p>
+              <p className="font-semibold">Reason: Please contact the admin for details.</p>
+              <p className="text-sm text-slate-600">You can still download your form responses, but cannot create or edit forms.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleSuspensionDialogClose}>
+              I Understand
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="max-w-6xl mx-auto space-y-8">
         
+        {/* Suspension Alert */}
+        {isSuspended && (
+          <Alert variant="destructive" className="border-red-300 bg-red-50">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Your account is suspended. You can view and download responses, but cannot create or edit forms. Please contact the administrator.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Over Limit Alert */}
-        {formsOverLimit > 0 && (
+        {formsOverLimit > 0 && !isSuspended && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -121,7 +166,16 @@ export default function Dashboard() {
             <p className="text-slate-500 mt-1">Overview of your form performance</p>
             <p className="text-sm text-slate-600 mt-2">Forms: {forms.length}/{formLimit}</p>
           </div>
-          {canCreateForm ? (
+          {isSuspended ? (
+            <Button 
+              className="shadow-lg hover:shadow-xl transition-all"
+              disabled
+              data-testid="button-create-form"
+            >
+              <Lock className="w-4 h-4 mr-2" />
+              Account Suspended
+            </Button>
+          ) : canCreateForm ? (
             <Link href="/forms/new">
               <Button 
                 className="shadow-lg hover:shadow-xl transition-all"

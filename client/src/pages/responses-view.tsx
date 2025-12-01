@@ -7,15 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ChevronLeft, Edit, Trash2, Save, X, BarChart3 } from "lucide-react";
+import { ChevronLeft, Edit, Trash2, Save, X, BarChart3, Download, Lock } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import * as XLSX from 'xlsx';
 
 export default function ResponsesView() {
   const [, setLocation] = useLocation();
   const [match, params] = useRoute("/forms/:id/responses");
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isSuspended } = useAuth();
   const { getForm, getFormResponses, updateResponse, deleteResponse, fetchFormResponses } = useForms();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Record<string, any>>({});
@@ -65,6 +66,36 @@ export default function ResponsesView() {
     }
   };
 
+  const handleDownloadXLSX = () => {
+    if (formResponses.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No responses to download.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Create worksheet data
+    const wsData = formResponses.map(response => ({
+      ...response.data,
+      'Submitted At': response.submittedAt
+    }));
+
+    // Create workbook and worksheet
+    const ws = XLSX.utils.json_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Responses");
+
+    // Download file
+    XLSX.writeFile(wb, `${form?.title || 'responses'}-responses.xlsx`);
+    
+    toast({
+      title: "Downloaded",
+      description: "Responses exported as XLSX file.",
+    });
+  };
+
   // Response data now uses field labels as keys, so we just display them directly
 
   return (
@@ -82,13 +113,33 @@ export default function ResponsesView() {
               <p className="text-slate-500 mt-1">{formResponses.length} responses</p>
             </div>
           </div>
-          <Link href={`/forms/${formId}/analytics`}>
-            <Button className="gap-2">
-              <BarChart3 className="w-4 h-4" />
-              View Analytics
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleDownloadXLSX}
+              variant="outline"
+              className="gap-2"
+              data-testid="button-download-xlsx"
+            >
+              <Download className="w-4 h-4" />
+              Download XLSX
             </Button>
-          </Link>
+            {!isSuspended && (
+              <Link href={`/forms/${formId}/analytics`}>
+                <Button className="gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  View Analytics
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
+
+        {isSuspended && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center gap-3">
+            <Lock className="w-5 h-5 text-yellow-600" />
+            <p className="text-sm text-yellow-800">Your account is suspended. You can view and download responses, but cannot edit them.</p>
+          </div>
+        )}
 
         <Card>
           <CardHeader>
@@ -126,7 +177,9 @@ export default function ResponsesView() {
                           </TableCell>
                         ))}
                         <TableCell className="text-right">
-                          {editingId === response.id ? (
+                          {isSuspended ? (
+                            <span className="text-xs text-slate-500">View Only</span>
+                          ) : editingId === response.id ? (
                             <div className="flex gap-2 justify-end">
                               <Button
                                 size="sm"
