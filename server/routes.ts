@@ -6,10 +6,15 @@ import { z } from "zod";
 import { registerAuthRoutes } from "./auth-routes";
 
 function isAuthenticated(req: any, res: any, next: any) {
-  if (req.isAuthenticated()) {
+  // Check both passport session and x-user-id header
+  if (req.isAuthenticated() || req.headers["x-user-id"]) {
     return next();
   }
   res.status(401).json({ message: "Unauthorized" });
+}
+
+function getUserId(req: any): string {
+  return req.user?.id || req.headers["x-user-id"] || "";
 }
 
 export async function registerRoutes(
@@ -23,7 +28,10 @@ export async function registerRoutes(
   // Form routes
   app.get("/api/forms", isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user!.id;
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const forms = await storage.getFormsByUserId(userId);
       res.json(forms);
     } catch (error) {
@@ -47,9 +55,13 @@ export async function registerRoutes(
 
   app.post("/api/forms", isAuthenticated, async (req, res) => {
     try {
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const validatedData = insertFormSchema.parse({
         ...req.body,
-        userId: req.user!.id,
+        userId,
       });
       const form = await storage.createForm(validatedData);
       res.status(201).json(form);
@@ -64,11 +76,15 @@ export async function registerRoutes(
 
   app.patch("/api/forms/:id", isAuthenticated, async (req, res) => {
     try {
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const form = await storage.getForm(req.params.id);
       if (!form) {
         return res.status(404).json({ message: "Form not found" });
       }
-      if (form.userId !== req.user!.id) {
+      if (form.userId !== userId) {
         return res.status(403).json({ message: "Forbidden" });
       }
       
@@ -86,11 +102,15 @@ export async function registerRoutes(
 
   app.delete("/api/forms/:id", isAuthenticated, async (req, res) => {
     try {
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const form = await storage.getForm(req.params.id);
       if (!form) {
         return res.status(404).json({ message: "Form not found" });
       }
-      if (form.userId !== req.user!.id) {
+      if (form.userId !== userId) {
         return res.status(403).json({ message: "Forbidden" });
       }
       

@@ -82,10 +82,11 @@ export function FormProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const fetchForms = async () => {
+    if (!user?.id) return;
     try {
       const response = await fetch("/api/forms", {
         headers: {
-          "x-user-id": user?.id || "",
+          "x-user-id": user.id,
         },
       });
       if (response.ok) {
@@ -98,12 +99,13 @@ export function FormProvider({ children }: { children: ReactNode }) {
   };
 
   const addForm = async (title: string, fields: FormField[], outputFormats?: OutputFormat[]) => {
+    if (!user?.id) return;
     try {
       const response = await fetch("/api/forms", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": user?.id || "",
+          "x-user-id": user.id,
         },
         body: JSON.stringify({
           title,
@@ -121,12 +123,13 @@ export function FormProvider({ children }: { children: ReactNode }) {
   };
 
   const updateForm = async (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[]) => {
+    if (!user?.id) return;
     try {
       const response = await fetch(`/api/forms/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": user?.id || "",
+          "x-user-id": user.id,
         },
         body: JSON.stringify({
           title,
@@ -144,11 +147,12 @@ export function FormProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteForm = async (id: string) => {
+    if (!user?.id) return;
     try {
       const response = await fetch(`/api/forms/${id}`, {
         method: "DELETE",
         headers: {
-          "x-user-id": user?.id || "",
+          "x-user-id": user.id,
         },
       });
       if (response.ok) {
