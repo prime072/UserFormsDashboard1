@@ -17,10 +17,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-const staticStats = [
-  { label: "Completion Rate", value: "64%", icon: TrendingUp, color: "text-green-600", bg: "bg-green-100" },
-];
-
 export default function Dashboard() {
   const { forms, responses, deleteForm } = useForms();
   const { user } = useAuth();
@@ -34,7 +30,9 @@ export default function Dashboard() {
   const canCreateForm = forms.length < formLimit;
   const formsOverLimit = Math.max(0, forms.length - formLimit);
 
-  const totalResponses = responses.length;
+  // Calculate total responses from all forms
+  const totalResponses = forms.reduce((sum, form) => sum + (form.responses || 0), 0);
+  
   const totalFormsStat = { 
     label: "Total Forms", 
     value: forms.length.toString(), 
@@ -51,7 +49,7 @@ export default function Dashboard() {
     bg: "bg-purple-100"
   };
 
-  const displayStats = [totalFormsStat, totalResponsesStat, staticStats[0]];
+  const displayStats = [totalFormsStat, totalResponsesStat];
 
   const handleShare = (e: React.MouseEvent, formId: string) => {
     e.stopPropagation();
@@ -180,11 +178,11 @@ export default function Dashboard() {
                     </DropdownMenu>
                   </div>
                   <CardTitle className="text-lg group-hover:text-primary transition-colors truncate">{form.title}</CardTitle>
-                  <CardDescription>{form.responses} responses collected</CardDescription>
+                  <CardDescription>{form.responses || 0} responses collected</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1">
                   <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(form.responses, 100)}%` }}></div>
+                    <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(form.responses || 0, 100)}%` }}></div>
                   </div>
                   <p className="text-xs text-slate-400 mt-4">
                     Updated {formatDistanceToNow(new Date(form.lastUpdated || new Date()), { addSuffix: true })}
