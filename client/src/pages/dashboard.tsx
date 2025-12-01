@@ -1,9 +1,10 @@
 import Layout from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, FileCheck, TrendingUp, Edit, ExternalLink, Share2, MoreHorizontal, Trash2 } from "lucide-react";
+import { Plus, Users, FileCheck, TrendingUp, Edit, ExternalLink, Share2, MoreHorizontal, Trash2, AlertCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useForms } from "@/lib/form-context";
+import { useAuth } from "@/lib/auth-context";
 import { formatDistanceToNow } from "date-fns";
 import {
   DropdownMenu,
@@ -14,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const staticStats = [
   { label: "Completion Rate", value: "64%", icon: TrendingUp, color: "text-green-600", bg: "bg-green-100" },
@@ -21,8 +23,16 @@ const staticStats = [
 
 export default function Dashboard() {
   const { forms, responses, deleteForm } = useForms();
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  // Get form limit from admin settings
+  const adminUserMetrics = JSON.parse(localStorage.getItem("admin_users_metrics") || "[]");
+  const userMetrics = adminUserMetrics.find((m: any) => m.userId === user?.id);
+  const formLimit = userMetrics?.formLimit || 10;
+  const canCreateForm = forms.length < formLimit;
+  const formsOverLimit = Math.max(0, forms.length - formLimit);
 
   const totalResponses = responses.length;
   const totalFormsStat = { 
@@ -69,18 +79,43 @@ export default function Dashboard() {
     <Layout>
       <div className="max-w-6xl mx-auto space-y-8">
         
+        {/* Over Limit Alert */}
+        {formsOverLimit > 0 && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              You have {formsOverLimit} form(s) over your limit of {formLimit}. Only delete operations are allowed. Please delete some forms to create new ones.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-display font-bold text-slate-900">Dashboard</h1>
             <p className="text-slate-500 mt-1">Overview of your form performance</p>
+            <p className="text-sm text-slate-600 mt-2">Forms: {forms.length}/{formLimit}</p>
           </div>
-          <Link href="/forms/new">
-            <Button className="shadow-lg hover:shadow-xl transition-all">
+          {canCreateForm ? (
+            <Link href="/forms/new">
+              <Button 
+                className="shadow-lg hover:shadow-xl transition-all"
+                data-testid="button-create-form"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create New Form
+              </Button>
+            </Link>
+          ) : (
+            <Button 
+              className="shadow-lg hover:shadow-xl transition-all"
+              disabled
+              data-testid="button-create-form"
+            >
               <Plus className="w-4 h-4 mr-2" />
               Create New Form
             </Button>
-          </Link>
+          )}
         </div>
 
         {/* Stats Grid */}

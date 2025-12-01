@@ -1,16 +1,21 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useLocation } from "wouter";
 
-type User = {
+export type User = {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
+  phone?: string;
+  company?: string;
+  photo?: string;
 };
 
 type AuthContextType = {
   user: User | null;
   login: (email: string) => void;
   logout: () => void;
+  updateUser: (updates: Partial<User>) => void;
   isLoading: boolean;
 };
 
@@ -31,7 +36,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = (email: string) => {
-    const newUser = { id: "1", name: email.split("@")[0], email };
+    const firstName = email.split("@")[0];
+    const newUser: User = { 
+      id: Math.random().toString(36).substr(2, 9),
+      firstName,
+      lastName: "",
+      email,
+      phone: "",
+      company: "",
+      photo: ""
+    };
     localStorage.setItem("formflow_user", JSON.stringify(newUser));
     setUser(newUser);
     setLocation("/dashboard");
@@ -43,8 +57,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLocation("/auth");
   };
 
+  const updateUser = (updates: Partial<User>) => {
+    if (user) {
+      const updated = { ...user, ...updates };
+      localStorage.setItem("formflow_user", JSON.stringify(updated));
+      setUser(updated);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
