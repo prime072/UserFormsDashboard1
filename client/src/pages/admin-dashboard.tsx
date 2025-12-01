@@ -7,9 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { LogOut, Users, HardDrive, FileText, Edit2, Save, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useForms } from "@/lib/form-context";
+import { User } from "@/lib/auth-context";
 
-interface UserMetrics {
-  userId: string;
+interface UserMetrics extends User {
   formsCount: number;
   storageUsed: number; // in KB
   formLimit: number;
@@ -24,37 +24,36 @@ export default function AdminDashboard() {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<UserMetrics>>({});
 
-  // Initialize users data from localStorage
+  // Initialize and update user data in real-time
   useEffect(() => {
-    const stored = localStorage.getItem("admin_users_metrics");
-    if (stored) {
-      setUsers(JSON.parse(stored));
-    } else {
-      // Create default user entry
-      const defaultUser: UserMetrics = {
-        userId: "user_1",
-        formsCount: forms.length,
-        storageUsed: Math.round(JSON.stringify(forms).length / 1024),
-        formLimit: 10,
-        storageLimit: 10240 // 10MB in KB
-      };
-      setUsers([defaultUser]);
-      localStorage.setItem("admin_users_metrics", JSON.stringify([defaultUser]));
-    }
-  }, []);
+    const allUsers = JSON.parse(localStorage.getItem("formflow_all_users") || "[]") as User[];
+    const adminMetrics = JSON.parse(localStorage.getItem("admin_users_metrics") || "[]");
 
-  // Update user metrics when forms change
-  useEffect(() => {
-    if (users.length > 0) {
-      const storageUsed = Math.round(JSON.stringify(forms).length / 1024);
-      const updatedUsers = users.map(u => ({
-        ...u,
+    // Calculate storage for each user
+    const storagePerUser = Math.round(JSON.stringify(forms).length / (allUsers.length || 1) / 1024);
+
+    const updatedUsers: UserMetrics[] = allUsers.map(user => {
+      const existingMetrics = adminMetrics.find((m: any) => m.userId === user.id);
+      return {
+        ...user,
         formsCount: forms.length,
-        storageUsed
-      }));
-      setUsers(updatedUsers);
-      localStorage.setItem("admin_users_metrics", JSON.stringify(updatedUsers));
-    }
+        storageUsed: storagePerUser,
+        formLimit: existingMetrics?.formLimit || 10,
+        storageLimit: existingMetrics?.storageLimit || 10240
+      };
+    });
+
+    setUsers(updatedUsers);
+    
+    // Sync back to localStorage
+    const updatedMetrics = updatedUsers.map(u => ({
+      userId: u.id,
+      formsCount: u.formsCount,
+      storageUsed: u.storageUsed,
+      formLimit: u.formLimit,
+      storageLimit: u.storageLimit
+    }));
+    localStorage.setItem("admin_users_metrics", JSON.stringify(updatedMetrics));
   }, [forms]);
 
   const stats = useMemo(() => {
@@ -67,22 +66,30 @@ export default function AdminDashboard() {
   }, [users, forms, responses]);
 
   const handleEditUser = (user: UserMetrics) => {
-    setEditingUserId(user.userId);
+    setEditingUserId(user.id);
     setEditData({ ...user });
   };
 
   const handleSaveUser = (userId: string) => {
-    const updatedUsers = users.map(u =>
-      u.userId === userId
-        ? { ...u, ...editData }
+    const updatedMetrics = users.map(u =>
+      u.id === userId
+        ? { ...u, formLimit: editData.formLimit || u.formLimit, storageLimit: editData.storageLimit || u.storageLimit }
         : u
     );
-    setUsers(updatedUsers);
-    localStorage.setItem("admin_users_metrics", JSON.stringify(updatedUsers));
+    setUsers(updatedMetrics);
+    
+    const metricsData = updatedMetrics.map(u => ({
+      userId: u.id,
+      formsCount: u.formsCount,
+      storageUsed: u.storageUsed,
+      formLimit: u.formLimit,
+      storageLimit: u.storageLimit
+    }));
+    localStorage.setItem("admin_users_metrics", JSON.stringify(metricsData));
     setEditingUserId(null);
     toast({
       title: "User Updated",
-      description: `Limits updated for ${userId}`,
+      description: `Limits updated for ${editData.firstName} ${editData.lastName}`,
     });
   };
 
@@ -176,14 +183,16 @@ export default function AdminDashboard() {
         {/* Users Management */}
         <Card>
           <CardHeader>
-            <CardTitle>User Management</CardTitle>
+            <CardTitle>User Management - Real-Time Data</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>User ID</TableHead>
+                    <TableHead>First Name</TableHead>
+                    <TableHead>Last Name</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>Forms Created</TableHead>
                     <TableHead>Storage Used</TableHead>
                     <TableHead>Form Limit</TableHead>
@@ -192,75 +201,85 @@ export default function AdminDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map(user => {
-                    const isEditing = editingUserId === user.userId;
-                    return (
-                      <TableRow key={user.userId}>
-                        <TableCell className="font-medium">{user.userId}</TableCell>
-                        <TableCell>{user.formsCount}</TableCell>
-                        <TableCell>{(user.storageUsed / 1024).toFixed(2)} MB</TableCell>
-                        <TableCell>
-                          {isEditing ? (
-                            <Input
-                              type="number"
-                              value={editData.formLimit || user.formLimit}
-                              onChange={(e) => setEditData({ ...editData, formLimit: parseInt(e.target.value) })}
-                              className="w-20"
-                              data-testid={`input-form-limit-${user.userId}`}
-                            />
-                          ) : (
-                            user.formLimit
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {isEditing ? (
-                            <Input
-                              type="number"
-                              value={editData.storageLimit ? editData.storageLimit / 1024 : user.storageLimit / 1024}
-                              onChange={(e) => setEditData({ ...editData, storageLimit: parseInt(e.target.value) * 1024 })}
-                              className="w-24"
-                              data-testid={`input-storage-limit-${user.userId}`}
-                            />
-                          ) : (
-                            <>{(user.storageLimit / 1024).toFixed(1)}</>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {isEditing ? (
-                            <div className="flex gap-2 justify-end">
-                              <Button
-                                size="sm"
-                                onClick={() => handleSaveUser(user.userId)}
-                                className="gap-1"
-                                data-testid={`button-save-user-${user.userId}`}
-                              >
-                                <Save className="w-3 h-3" /> Save
-                              </Button>
+                  {users.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                        No users yet. Users will appear here when they sign up.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    users.map(user => {
+                      const isEditing = editingUserId === user.id;
+                      return (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">{user.firstName}</TableCell>
+                          <TableCell>{user.lastName || "-"}</TableCell>
+                          <TableCell className="text-sm">{user.email}</TableCell>
+                          <TableCell className="font-medium">{user.formsCount}</TableCell>
+                          <TableCell>{(user.storageUsed / 1024).toFixed(2)} MB</TableCell>
+                          <TableCell>
+                            {isEditing ? (
+                              <Input
+                                type="number"
+                                value={editData.formLimit || user.formLimit}
+                                onChange={(e) => setEditData({ ...editData, formLimit: parseInt(e.target.value) })}
+                                className="w-20"
+                                data-testid={`input-form-limit-${user.id}`}
+                              />
+                            ) : (
+                              user.formLimit
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {isEditing ? (
+                              <Input
+                                type="number"
+                                value={editData.storageLimit ? editData.storageLimit / 1024 : user.storageLimit / 1024}
+                                onChange={(e) => setEditData({ ...editData, storageLimit: parseInt(e.target.value) * 1024 })}
+                                className="w-24"
+                                data-testid={`input-storage-limit-${user.id}`}
+                              />
+                            ) : (
+                              (user.storageLimit / 1024).toFixed(1)
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {isEditing ? (
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSaveUser(user.id)}
+                                  className="gap-1"
+                                  data-testid={`button-save-user-${user.id}`}
+                                >
+                                  <Save className="w-3 h-3" /> Save
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingUserId(null)}
+                                  className="gap-1"
+                                  data-testid={`button-cancel-user-${user.id}`}
+                                >
+                                  <X className="w-3 h-3" /> Cancel
+                                </Button>
+                              </div>
+                            ) : (
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => setEditingUserId(null)}
+                                onClick={() => handleEditUser(user)}
                                 className="gap-1"
-                                data-testid={`button-cancel-user-${user.userId}`}
+                                data-testid={`button-edit-user-${user.id}`}
                               >
-                                <X className="w-3 h-3" /> Cancel
+                                <Edit2 className="w-3 h-3" /> Edit
                               </Button>
-                            </div>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEditUser(user)}
-                              className="gap-1"
-                              data-testid={`button-edit-user-${user.userId}`}
-                            >
-                              <Edit2 className="w-3 h-3" /> Edit
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
                 </TableBody>
               </Table>
             </div>

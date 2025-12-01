@@ -47,6 +47,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       photo: ""
     };
     localStorage.setItem("formflow_user", JSON.stringify(newUser));
+    
+    // Track all users in admin system
+    const allUsers = JSON.parse(localStorage.getItem("formflow_all_users") || "[]");
+    const existingUserIndex = allUsers.findIndex((u: User) => u.email === email);
+    if (existingUserIndex >= 0) {
+      allUsers[existingUserIndex] = newUser;
+    } else {
+      allUsers.push(newUser);
+    }
+    localStorage.setItem("formflow_all_users", JSON.stringify(allUsers));
+    
     setUser(newUser);
     setLocation("/dashboard");
   };
