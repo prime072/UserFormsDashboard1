@@ -13,13 +13,13 @@ export type User = {
 
 type AuthContextType = {
   user: User | null;
-  login: (email: string) => Promise<void>;
+  login: (email: string) => void;
   logout: () => void;
-  updateUser: (updates: Partial<User>) => Promise<void>;
+  updateUser: (updates: Partial<User>) => void;
   isLoading: boolean;
   authError: string | null;
   clearAuthError: () => void;
-  checkEmailExists: (email: string) => Promise<boolean>;
+  checkEmailExists: (email: string) => boolean;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -31,104 +31,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    // Check local storage for session token
-    const token = localStorage.getItem("formflow_token");
+    // Check local storage on load
     const stored = localStorage.getItem("formflow_user");
-    if (token && stored) {
+    if (stored) {
       setUser(JSON.parse(stored));
     }
     setIsLoading(false);
   }, []);
 
-  const checkEmailExists = async (email: string): Promise<boolean> => {
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
+  const checkEmailExists = (email: string): boolean => {
+    const allUsers = JSON.parse(localStorage.getItem("formflow_all_users") || "[]") as User[];
+    return allUsers.some((u: User) => u.email === email);
   };
 
-  const login = async (email: string) => {
-    setAuthError(null);
-    try {
-      // Try to login first (check if user exists)
-      const loginRes = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      if (!loginRes.ok) {
-        // User doesn't exist, sign up
-        const signupRes = await fetch("/api/auth/signup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
-
-        if (signupRes.status === 409) {
-          const error = await signupRes.json();
-          setAuthError(error.error || "Email already registered");
-          return;
-        }
-
-        if (!signupRes.ok) {
-          throw new Error("Signup failed");
-        }
-
-        const newUser = await signupRes.json();
-        localStorage.setItem("formflow_token", newUser.id);
-        localStorage.setItem("formflow_user", JSON.stringify(newUser));
-        setUser(newUser);
-        setLocation("/dashboard");
-      } else {
-        // Login successful
-        const user = await loginRes.json();
-        localStorage.setItem("formflow_token", user.id);
-        localStorage.setItem("formflow_user", JSON.stringify(user));
-        setUser(user);
-        setLocation("/dashboard");
-      }
-    } catch (error) {
-      console.error("Auth error:", error);
-      setAuthError("Authentication failed. Please try again.");
+  const login = (email: string) => {
+    // Check if email already exists
+    if (checkEmailExists(email)) {
+      setAuthError("This email is already registered. Please log in or use a different email.");
+      return;
     }
+
+    setAuthError(null);
+    const firstName = email.split("@")[0];
+    const newUser: User = { 
+      id: Math.random().toString(36).substr(2, 9),
+      firstName,
+      lastName: "",
+      email,
+      phone: "",
+      company: "",
+      photo: ""
+    };
+    localStorage.setItem("formflow_user", JSON.stringify(newUser));
+    
+    // Track all users in admin system
+    const allUsers = JSON.parse(localStorage.getItem("formflow_all_users") || "[]") as User[];
+    allUsers.push(newUser);
+    localStorage.setItem("formflow_all_users", JSON.stringify(allUsers));
+    
+    setUser(newUser);
+    setLocation("/dashboard");
   };
 
   const logout = () => {
-    localStorage.removeItem("formflow_token");
     localStorage.removeItem("formflow_user");
     setUser(null);
     setLocation("/auth");
   };
 
-  const updateUser = async (updates: Partial<User>) => {
-    if (!user) return;
-    try {
-      const response = await fetch("/api/auth/profile", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-id": user.id,
-        },
-        body: JSON.stringify(updates),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update profile");
-      }
-
-      const updated = await response.json();
+  const updateUser = (updates: Partial<User>) => {
+    if (user) {
+      const updated = { ...user, ...updates };
       localStorage.setItem("formflow_user", JSON.stringify(updated));
+      
+      // Update in all users list
+      const allUsers = JSON.parse(localStorage.getItem("formflow_all_users") || "[]") as User[];
+      const index = allUsers.findIndex((u: User) => u.id === user.id);
+      if (index >= 0) {
+        allUsers[index] = updated;
+        localStorage.setItem("formflow_all_users", JSON.stringify(allUsers));
+      }
+      
       setUser(updated);
-    } catch (error) {
-      console.error("Update user error:", error);
-      setAuthError("Failed to update profile");
     }
   };
 
