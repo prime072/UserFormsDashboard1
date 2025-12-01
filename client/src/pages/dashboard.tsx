@@ -15,25 +15,33 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock data for stats (since we don't track responses yet)
-const stats = [
-  { label: "Total Forms", value: "12", icon: FileCheck, color: "text-blue-600", bg: "bg-blue-100" },
-  { label: "Total Responses", value: "1,284", icon: Users, color: "text-purple-600", bg: "bg-purple-100" },
+const staticStats = [
   { label: "Completion Rate", value: "64%", icon: TrendingUp, color: "text-green-600", bg: "bg-green-100" },
 ];
 
 export default function Dashboard() {
-  const { forms, deleteForm } = useForms();
+  const { forms, responses, deleteForm } = useForms();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  // Calculate real total forms for the stat
+  const totalResponses = responses.length;
   const totalFormsStat = { 
-    ...stats[0], 
-    value: forms.length.toString() 
+    label: "Total Forms", 
+    value: forms.length.toString(), 
+    icon: FileCheck, 
+    color: "text-blue-600", 
+    bg: "bg-blue-100" 
+  };
+  
+  const totalResponsesStat = {
+    label: "Total Responses",
+    value: totalResponses.toString(),
+    icon: Users,
+    color: "text-purple-600",
+    bg: "bg-purple-100"
   };
 
-  const displayStats = [totalFormsStat, stats[1], stats[2]];
+  const displayStats = [totalFormsStat, totalResponsesStat, staticStats[0]];
 
   const handleShare = (e: React.MouseEvent, formId: string) => {
     e.stopPropagation();
@@ -119,6 +127,9 @@ export default function Dashboard() {
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setLocation(`/forms/${form.id}/edit`); }}>
                           <Edit className="w-4 h-4 mr-2" /> Edit Form
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setLocation(`/forms/${form.id}/responses`); }}>
+                          <Users className="w-4 h-4 mr-2" /> View Responses
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={(e) => handleShare(e, form.id)}>
                           <Share2 className="w-4 h-4 mr-2" /> Share Link
