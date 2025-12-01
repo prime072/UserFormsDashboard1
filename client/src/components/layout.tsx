@@ -8,7 +8,8 @@ import {
   LogOut, 
   Plus,
   Menu,
-  BarChart3
+  BarChart3,
+  ShieldAdmin
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -54,7 +55,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4 border-t">
+        <div className="p-4 border-t space-y-2">
           <div className="flex items-center gap-3 mb-4 px-2">
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-primary/20 text-primary text-xs">
@@ -66,6 +67,12 @@ export default function Layout({ children }: { children: ReactNode }) {
               <p className="text-xs text-slate-500 truncate">{user?.email}</p>
             </div>
           </div>
+          <Link href="/admin/login">
+            <a className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+              <ShieldAdmin className="w-4 h-4" />
+              Admin Portal
+            </a>
+          </Link>
           <Button variant="outline" size="sm" className="w-full justify-start text-slate-600" onClick={logout}>
             <LogOut className="w-4 h-4 mr-2" />
             Log out
@@ -102,7 +109,13 @@ export default function Layout({ children }: { children: ReactNode }) {
                     </Link>
                   ))}
                 </nav>
-                <div className="p-4 border-t">
+                <div className="p-4 border-t space-y-2">
+                  <Link href="/admin/login">
+                    <a className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100">
+                      <ShieldAdmin className="w-4 h-4" />
+                      Admin Portal
+                    </a>
+                  </Link>
                   <Button variant="ghost" className="w-full justify-start" onClick={logout}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Log out
