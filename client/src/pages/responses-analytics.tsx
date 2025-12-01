@@ -19,7 +19,7 @@ export default function ResponsesAnalytics() {
   const form = formId ? getForm(formId) : undefined;
   const formResponses = formId ? getFormResponses(formId) : [];
 
-  const fieldOptions = form?.fields.map(f => ({ id: f.id, label: f.label })) || [];
+  const fieldOptions = useMemo(() => form?.fields.map(f => ({ id: f.id, label: f.label })) || [], [form]);
   const defaultField = fieldOptions[0]?.label || "";
 
   const activeField = selectedField || defaultField;
@@ -28,13 +28,11 @@ export default function ResponsesAnalytics() {
     if (!activeField || formResponses.length === 0) return [];
 
     if (viewMode === "rowwise") {
-      // Row-wise: Each response is a row, show its data for selected field
       return formResponses.map((resp, idx) => ({
         name: `Response ${idx + 1}`,
         value: String(resp.data[activeField] || "-")
       }));
     } else {
-      // Column-wise: Count unique values for selected field
       const valueCounts: Record<string, number> = {};
       formResponses.forEach(resp => {
         const val = String(resp.data[activeField] || "Unknown");
