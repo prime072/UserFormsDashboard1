@@ -23,6 +23,7 @@ export const forms = pgTable("forms", {
   title: text("title").notNull(),
   status: text("status").notNull().default("Active"),
   fields: jsonb("fields").notNull(),
+  outputFormats: jsonb("output_formats").notNull().default(sql`'["thank_you"]'::jsonb`),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

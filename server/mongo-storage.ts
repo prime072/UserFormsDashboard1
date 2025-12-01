@@ -23,6 +23,7 @@ const formSchema = new mongoose.Schema({
   title: String,
   status: { type: String, default: "Active" },
   fields: mongoose.Schema.Types.Mixed,
+  outputFormats: { type: Array, default: ["thank_you"] },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
