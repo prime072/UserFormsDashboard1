@@ -118,7 +118,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addForm = async (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility: "public" | "private" = "public") => {
+  const addForm = async (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private") => {
     if (!user?.id) return;
     try {
       const response = await fetch("/api/forms", {
@@ -131,7 +131,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
           title,
           fields,
           outputFormats: outputFormats || ["thank_you"],
-          visibility,
+          visibility: visibility || "public",
         }),
       });
       if (response.ok) {
