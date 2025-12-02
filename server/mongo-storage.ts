@@ -25,8 +25,20 @@ const formSchema = new mongoose.Schema({
   userId: String,
   title: String,
   status: { type: String, default: "Active" },
+  visibility: { type: String, enum: ["public", "private"], default: "public" },
   fields: mongoose.Schema.Types.Mixed,
   outputFormats: { type: Array, default: ["thank_you"] },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+const privateUserSchema = new mongoose.Schema({
+  id: { type: String, unique: true, required: true },
+  userId: String,
+  name: String,
+  email: String,
+  password: String,
+  accessibleForms: { type: [String], default: [] },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
@@ -41,6 +53,7 @@ const responseSchema = new mongoose.Schema({
 const UserModel = mongoose.model("User", userSchema, "users");
 const FormModel = mongoose.model("Form", formSchema, "forms");
 const ResponseModel = mongoose.model("Response", responseSchema, "responses");
+const PrivateUserModel = mongoose.model("PrivateUser", privateUserSchema, "private_users");
 
 export class MongoDBStorage implements IStorage {
   private connected = false;
@@ -303,6 +316,71 @@ export class MongoDBStorage implements IStorage {
     await this.connect();
     if (formIds.length === 0) return 0;
     return await ResponseModel.countDocuments({ formId: { $in: formIds } });
+  }
+
+  // Private User methods
+  async createPrivateUser(userId: string, name: string, email: string, password: string): Promise<any> {
+    await this.connect();
+    const id = Math.random().toString(36).substr(2, 9);
+    const doc = await PrivateUserModel.create({
+      id,
+      userId,
+      name,
+      email,
+      password,
+      accessibleForms: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const { _id, ...rest } = doc.toObject();
+    return rest;
+  }
+
+  async getPrivateUsersByUserId(userId: string): Promise<any[]> {
+    await this.connect();
+    const docs = await PrivateUserModel.find({ userId }).lean();
+    return docs.map((doc: any) => {
+      const { _id, ...rest } = doc;
+      return rest;
+    });
+  }
+
+  async getPrivateUser(id: string): Promise<any> {
+    await this.connect();
+    const doc = await PrivateUserModel.findOne({ id }).lean();
+    if (!doc) return undefined;
+    const { _id, ...rest } = doc as any;
+    return rest;
+  }
+
+  async updatePrivateUser(id: string, updates: any): Promise<any> {
+    await this.connect();
+    const doc = await PrivateUserModel.findOneAndUpdate(
+      { id },
+      { ...updates, updatedAt: new Date() },
+      { new: true }
+    ).lean();
+    if (!doc) return undefined;
+    const { _id, ...rest } = doc as any;
+    return rest;
+  }
+
+  async deletePrivateUser(id: string): Promise<boolean> {
+    await this.connect();
+    const result = await PrivateUserModel.deleteOne({ id });
+    return result.deletedCount > 0;
+  }
+
+  async updatePrivateUserAccess(privateUserId: string, formIds: string[]): Promise<any> {
+    await this.connect();
+    const doc = await PrivateUserModel.findOneAndUpdate(
+      { id: privateUserId },
+      { accessibleForms: formIds, updatedAt: new Date() },
+      { new: true }
+    ).lean();
+    if (!doc) return undefined;
+    const { _id, ...rest } = doc as any;
+    return rest;
   }
 }
 

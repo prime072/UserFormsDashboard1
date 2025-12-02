@@ -25,6 +25,7 @@ export interface Form {
   lastUpdated: string;
   fields: FormField[];
   outputFormats?: OutputFormat[];
+  visibility?: "public" | "private";
 }
 
 export interface FormResponse {
@@ -117,7 +118,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addForm = async (title: string, fields: FormField[], outputFormats?: OutputFormat[]) => {
+  const addForm = async (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility: "public" | "private" = "public") => {
     if (!user?.id) return;
     try {
       const response = await fetch("/api/forms", {
@@ -130,6 +131,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
           title,
           fields,
           outputFormats: outputFormats || ["thank_you"],
+          visibility,
         }),
       });
       if (response.ok) {
@@ -141,7 +143,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateForm = async (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[]) => {
+  const updateForm = async (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private") => {
     if (!user?.id) return;
     try {
       const response = await fetch(`/api/forms/${id}`, {
@@ -154,6 +156,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
           title,
           fields,
           outputFormats: outputFormats || ["thank_you"],
+          ...(visibility && { visibility }),
         }),
       });
       if (response.ok) {

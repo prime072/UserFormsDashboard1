@@ -30,6 +30,7 @@ export default function FormBuilder() {
     { id: "2", type: "email", label: "Email Address", placeholder: "john@example.com", required: true }
   ]);
   const [outputFormats, setOutputFormats] = useState<OutputFormat[]>(["thank_you"]);
+  const [visibility, setVisibility] = useState<"public" | "private">("public");
 
   useEffect(() => {
     if (isEditing && formId) {
@@ -38,6 +39,7 @@ export default function FormBuilder() {
         setTitle(existingForm.title);
         setFields(existingForm.fields.length > 0 ? existingForm.fields : fields);
         setOutputFormats(existingForm.outputFormats || ["thank_you"]);
+        setVisibility(existingForm.visibility || "public");
       }
     }
   }, [isEditing, formId]);
@@ -82,13 +84,13 @@ export default function FormBuilder() {
   const handleSave = async () => {
     try {
       if (isEditing && formId) {
-        await updateForm(formId, title, fields, outputFormats);
+        await updateForm(formId, title, fields, outputFormats, visibility);
         toast({
           title: "Form Updated",
           description: "Your changes have been saved.",
         });
       } else {
-        await addForm(title, fields, outputFormats);
+        await addForm(title, fields, outputFormats, visibility);
         toast({
           title: "Form Created",
           description: "Your form has been created successfully.",
@@ -147,8 +149,35 @@ export default function FormBuilder() {
           </div>
         </div>
 
-        {/* Output Settings */}
-        <div className="mb-8">
+        {/* Form Settings */}
+        <div className="mb-8 space-y-6">
+          <div className="bg-white p-6 rounded-lg border border-slate-200">
+            <Label className="text-sm font-semibold mb-3 block">Form Visibility</Label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="visibility" 
+                  value="public" 
+                  checked={visibility === "public"}
+                  onChange={(e) => setVisibility(e.target.value as "public" | "private")}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">Public - Anyone with link can submit</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="visibility" 
+                  value="private" 
+                  checked={visibility === "private"}
+                  onChange={(e) => setVisibility(e.target.value as "public" | "private")}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">Private - Only specific users can access</span>
+              </label>
+            </div>
+          </div>
           <OutputSettings 
             selectedFormats={outputFormats}
             onChange={setOutputFormats}
