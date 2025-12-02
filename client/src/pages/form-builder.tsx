@@ -84,13 +84,13 @@ export default function FormBuilder() {
   const handleSave = async () => {
     try {
       if (isEditing && formId) {
-        await updateForm(formId, title, fields, outputFormats, visibility);
+        await updateForm(formId, title, fields, outputFormats, visibility as any);
         toast({
           title: "Form Updated",
           description: "Your changes have been saved.",
         });
       } else {
-        await addForm(title, fields, outputFormats, visibility);
+        await addForm(title, fields, outputFormats, visibility as any);
         toast({
           title: "Form Created",
           description: "Your form has been created successfully.",

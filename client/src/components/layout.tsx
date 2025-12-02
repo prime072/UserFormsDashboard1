@@ -9,7 +9,8 @@ import {
   Plus,
   Menu,
   BarChart3,
-  User
+  User,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -23,6 +24,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/forms", label: "My Forms", icon: FileText },
     { href: "/responses", label: "Responses", icon: BarChart3 },
+    { href: "/private-users", label: "Private Users", icon: Users },
     { href: "/profile", label: "Profile", icon: User },
     { href: "/settings", label: "Settings", icon: Settings },
   ];
