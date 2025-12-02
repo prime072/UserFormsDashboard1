@@ -193,7 +193,7 @@ export async function registerRoutes(
 
   app.get("/api/responses/:id", async (req, res) => {
     try {
-      const response = await storage.getResponse(req.params.id);
+      const response = await (storage as any).getResponse?.(req.params.id);
       if (!response) {
         return res.status(404).json({ message: "Response not found" });
       }

@@ -47,11 +47,11 @@ export function registerAuthRoutes(app: Express) {
       res.status(201).json({
         id: newUser.id,
         email: newUser.email,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        phone: newUser.phone,
-        company: newUser.company,
-        photo: newUser.photo,
+        firstName: (newUser as any).firstName || "",
+        lastName: (newUser as any).lastName || "",
+        phone: (newUser as any).phone || "",
+        company: (newUser as any).company || "",
+        photo: (newUser as any).photo || "",
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
