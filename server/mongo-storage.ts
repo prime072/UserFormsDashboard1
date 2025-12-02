@@ -16,13 +16,6 @@ const userSchema = new mongoose.Schema({
   status: { type: String, default: "active" },
   totalForms: { type: Number, default: 0 },
   totalResponses: { type: Number, default: 0 },
-  emailVerified: { type: Boolean, default: false },
-  verificationToken: String,
-  verificationTokenExpiry: Date,
-  resetOTP: String,
-  resetOTPExpiry: Date,
-  resetToken: String,
-  resetTokenExpiry: Date,
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
@@ -130,14 +123,6 @@ export class MongoDBStorage implements IStorage {
       const { _id, ...rest } = doc;
       return rest as User;
     });
-  }
-
-  async getUserByVerificationToken(token: string): Promise<User | undefined> {
-    await this.connect();
-    const doc = await UserModel.findOne({ verificationToken: token }).lean();
-    if (!doc) return undefined;
-    const { _id, ...rest } = doc as any;
-    return rest as User;
   }
 
   async deleteUser(id: string): Promise<boolean> {
