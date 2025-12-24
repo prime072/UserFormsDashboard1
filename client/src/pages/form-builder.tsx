@@ -97,7 +97,7 @@ export default function FormBuilder() {
         });
       }
       
-      setTimeout(() => setLocation("/dashboard"), 1000);
+      setTimeout(() => setLocation("/forms"), 1000);
     } catch (error) {
       toast({
         title: "Error",
@@ -129,7 +129,7 @@ export default function FormBuilder() {
         {/* Builder Header */}
         <div className="flex items-center justify-between mb-8 sticky top-0 bg-gray-50/95 backdrop-blur z-10 py-4 border-b -mx-4 px-4 md:mx-0 md:px-0 md:bg-transparent md:border-none md:py-0 md:static">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard">
+            <Link href="/forms">
               <Button variant="ghost" size="icon" className="rounded-full">
                 <ChevronLeft className="w-5 h-5" />
               </Button>
@@ -141,7 +141,7 @@ export default function FormBuilder() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setLocation("/dashboard")}>Cancel</Button>
+            <Button variant="outline" onClick={() => setLocation("/forms")}>Cancel</Button>
             <Button onClick={handleSave} className="gap-2">
               <Save className="w-4 h-4" />
               {isEditing ? "Update Form" : "Save Form"}
