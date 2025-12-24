@@ -353,6 +353,14 @@ export class MongoDBStorage implements IStorage {
     return rest;
   }
 
+  async getPrivateUserByName(name: string): Promise<any> {
+    await this.connect();
+    const doc = await PrivateUserModel.findOne({ name }).lean();
+    if (!doc) return undefined;
+    const { _id, ...rest } = doc as any;
+    return rest;
+  }
+
   async updatePrivateUser(id: string, updates: any): Promise<any> {
     await this.connect();
     const doc = await PrivateUserModel.findOneAndUpdate(

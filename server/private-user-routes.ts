@@ -91,13 +91,14 @@ export function registerPrivateUserRoutes(app: Express) {
   // Private user login
   app.post("/api/auth/private-login", async (req, res) => {
     try {
-      const { userId: parentUserId, password } = req.body;
+      const { userId, password } = req.body;
 
-      if (!parentUserId || !password) {
+      if (!userId || !password) {
         return res.status(400).json({ error: "User ID and password are required" });
       }
 
-      const privateUser = await (storage as any).getPrivateUser?.(parentUserId);
+      // Look up by the login name (userId is actually the login name)
+      const privateUser = await (storage as any).getPrivateUserByName?.(userId);
       if (!privateUser) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
