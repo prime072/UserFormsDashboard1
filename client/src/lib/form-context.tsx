@@ -38,8 +38,8 @@ export interface FormResponse {
 type FormContextType = {
   forms: Form[];
   responses: FormResponse[];
-  addForm: (title: string, fields: FormField[], outputFormats?: OutputFormat[]) => Promise<void>;
-  updateForm: (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[]) => Promise<void>;
+  addForm: (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private") => Promise<void>;
+  updateForm: (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private") => Promise<void>;
   deleteForm: (id: string) => Promise<void>;
   getForm: (id: string) => Form | undefined;
   submitResponse: (formId: string, data: any) => Promise<{ submissionId: string }>;
@@ -156,7 +156,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
           title,
           fields,
           outputFormats: outputFormats || ["thank_you"],
-          ...(visibility && { visibility }),
+          visibility: visibility || "public",
         }),
       });
       if (response.ok) {

@@ -77,11 +77,16 @@ export async function registerRoutes(
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
+      const { visibility, ...bodyRest } = req.body;
       const validatedData = insertFormSchema.parse({
-        ...req.body,
+        ...bodyRest,
         userId,
       });
-      const form = await storage.createForm(validatedData);
+      const formDataWithVisibility = {
+        ...validatedData,
+        visibility: visibility || "public",
+      } as any;
+      const form = await storage.createForm(formDataWithVisibility);
       // Update user metrics
       await (storage as any).updateUserMetrics?.(userId);
       res.status(201).json(form);
@@ -108,8 +113,13 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Forbidden" });
       }
       
-      const validatedData = insertFormSchema.partial().parse(req.body);
-      const updatedForm = await storage.updateForm(req.params.id, validatedData);
+      const { visibility, ...bodyRest } = req.body;
+      const validatedData = insertFormSchema.partial().parse(bodyRest);
+      const updateDataWithVisibility = {
+        ...validatedData,
+        ...(visibility !== undefined && { visibility }),
+      } as any;
+      const updatedForm = await storage.updateForm(req.params.id, updateDataWithVisibility);
       res.json(updatedForm);
     } catch (error) {
       if (error instanceof z.ZodError) {
