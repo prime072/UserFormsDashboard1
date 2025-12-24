@@ -1,7 +1,7 @@
 import Layout from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, ExternalLink, Share2, MoreHorizontal, Trash2, FileText } from "lucide-react";
+import { Plus, Edit, ExternalLink, Share2, MoreHorizontal, Trash2, FileText, Globe, Lock } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useForms } from "@/lib/form-context";
 import { useAuth } from "@/lib/auth-context";
@@ -106,7 +106,7 @@ export default function MyForms() {
         
         {formsOverLimit > 0 && (
           <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
+            <AlertCircle className="h-4 w-4" data-testid="icon-form-limit-alert" />
             <AlertDescription>
               You have {formsOverLimit} form(s) over your limit of {formLimit}. Only delete operations are allowed.
             </AlertDescription>
@@ -170,10 +170,27 @@ export default function MyForms() {
               >
                 <CardHeader>
                   <div className="flex justify-between items-start mb-2">
-                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      form.status === "Active" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"
-                    }`}>
-                      {form.status}
+                    <div className="flex gap-2">
+                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        form.status === "Active" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-600"
+                      }`}>
+                        {form.status}
+                      </div>
+                      <div className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
+                        form.visibility === "public" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"
+                      }`}>
+                        {form.visibility === "public" ? (
+                          <>
+                            <Globe className="w-3 h-3" />
+                            Public
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-3 h-3" />
+                            Private
+                          </>
+                        )}
+                      </div>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

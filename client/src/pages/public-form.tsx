@@ -10,17 +10,65 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { Lock } from "lucide-react";
 
 export default function PublicFormPage() {
   const [match, params] = useRoute("/s/:id");
   const { getForm, submitResponse } = useForms();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [privateUser, setPrivateUser] = useState<any>(null);
+  const [loginCredentials, setLoginCredentials] = useState({ userId: "", password: "" });
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   
   const formId = params?.id;
   const form = formId ? getForm(formId) : undefined;
 
   const { register, handleSubmit, formState: { errors }, setValue } = useForm();
+
+  // Handle private user login
+  const handlePrivateLogin = async () => {
+    if (!loginCredentials.userId || !loginCredentials.password) {
+      toast({ title: "Error", description: "Please enter user ID and password", variant: "destructive" });
+      return;
+    }
+
+    setIsLoggingIn(true);
+    try {
+      const response = await fetch("/api/auth/private-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: loginCredentials.userId,
+          password: loginCredentials.password,
+        }),
+      });
+
+      if (!response.ok) {
+        toast({ title: "Error", description: "Invalid credentials", variant: "destructive" });
+        setIsLoggingIn(false);
+        return;
+      }
+
+      const user = await response.json();
+      
+      // Check if this private user has access to this form
+      if (!user.accessibleForms?.includes(formId)) {
+        toast({ title: "Error", description: "You don't have access to this form", variant: "destructive" });
+        setIsLoggingIn(false);
+        return;
+      }
+
+      setPrivateUser(user);
+      sessionStorage.setItem("private_user", JSON.stringify(user));
+      toast({ title: "Success", description: "Logged in successfully" });
+    } catch (error) {
+      toast({ title: "Error", description: "Login failed", variant: "destructive" });
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
 
   if (!form) {
     return (
@@ -29,6 +77,65 @@ export default function PublicFormPage() {
           <CardContent className="p-8 text-center">
             <h1 className="text-2xl font-bold text-slate-900 mb-2">Form Not Found</h1>
             <p className="text-slate-500">The form you are looking for does not exist or has been removed.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Check if form is private and user is not logged in
+  if (form.visibility === "private" && !privateUser) {
+    return (
+      <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+        <Card className="w-full max-w-md shadow-xl border-t-4 border-t-primary">
+          <CardHeader className="space-y-1 border-b bg-white/50 pb-8 text-center">
+            <div className="flex justify-center mb-4">
+              <Lock className="w-8 h-8 text-primary" />
+            </div>
+            <CardTitle className="text-2xl font-display font-bold text-slate-900">Private Form</CardTitle>
+            <CardDescription>This form is private. Please log in to access it.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-8 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="userId">User ID</Label>
+              <Input
+                id="userId"
+                placeholder="Your user ID"
+                value={loginCredentials.userId}
+                onChange={(e) => setLoginCredentials({ ...loginCredentials, userId: e.target.value })}
+                data-testid="input-private-form-user-id"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={loginCredentials.password}
+                onChange={(e) => setLoginCredentials({ ...loginCredentials, password: e.target.value })}
+                data-testid="input-private-form-password"
+              />
+            </div>
+
+            <Button
+              onClick={handlePrivateLogin}
+              disabled={isLoggingIn}
+              className="w-full"
+              data-testid="button-private-form-login"
+            >
+              {isLoggingIn ? "Signing in..." : "Sign In"}
+            </Button>
+
+            <Button
+              variant="ghost"
+              className="w-full text-sm"
+              onClick={() => setLocation("/")}
+              data-testid="button-back-home"
+            >
+              Back to Home
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -78,6 +185,12 @@ export default function PublicFormPage() {
         <CardHeader className="space-y-1 border-b bg-white/50 pb-8">
           <CardTitle className="text-3xl font-display font-bold text-slate-900">{form.title}</CardTitle>
           <CardDescription>Please fill out the form below</CardDescription>
+          {form.visibility === "private" && (
+            <div className="mt-4 flex items-center gap-2 text-sm text-slate-600">
+              <Lock className="w-4 h-4" />
+              <span>Logged in as: {privateUser?.name}</span>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="pt-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
