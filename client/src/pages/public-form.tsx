@@ -1,5 +1,4 @@
 import { useRoute, useLocation } from "wouter";
-import { useForms } from "@/lib/form-context";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,22 +9,48 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Lock } from "lucide-react";
 
 export default function PublicFormPage() {
   const [match, params] = useRoute("/s/:id");
-  const { getForm, submitResponse } = useForms();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [form, setForm] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [privateUser, setPrivateUser] = useState<any>(null);
   const [loginCredentials, setLoginCredentials] = useState({ userId: "", password: "" });
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   
   const formId = params?.id;
-  const form = formId ? getForm(formId) : undefined;
-
   const { register, handleSubmit, formState: { errors }, setValue } = useForm();
+
+  // Fetch form data on mount
+  useEffect(() => {
+    const fetchForm = async () => {
+      if (!formId) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/forms/${formId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setForm(data);
+        } else {
+          setForm(null);
+        }
+      } catch (error) {
+        console.error("Error fetching form:", error);
+        setForm(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchForm();
+  }, [formId]);
 
   // Handle private user login
   const handlePrivateLogin = async () => {
@@ -69,6 +94,19 @@ export default function PublicFormPage() {
       setIsLoggingIn(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Loading...</h1>
+            <p className="text-slate-500">Please wait while we load the form.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!form) {
     return (
@@ -146,7 +184,7 @@ export default function PublicFormPage() {
     try {
       // Convert field IDs to field labels for better readability
       const formattedData: Record<string, any> = {};
-      form.fields.forEach(field => {
+      form.fields.forEach((field: any) => {
         if (data[field.id] !== undefined) {
           formattedData[field.label] = data[field.id];
         }
@@ -194,7 +232,7 @@ export default function PublicFormPage() {
         </CardHeader>
         <CardContent className="pt-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {form.fields.map((field) => (
+            {form.fields.map((field: any) => (
               <div key={field.id} className="space-y-2">
                 <Label className="text-base font-medium text-slate-900">
                   {field.label}
@@ -256,7 +294,7 @@ export default function PublicFormPage() {
                       <SelectValue placeholder="Select an option" />
                     </SelectTrigger>
                     <SelectContent>
-                      {field.options?.map((opt, idx) => (
+                      {field.options?.map((opt: string, idx: number) => (
                         <SelectItem key={idx} value={opt}>{opt}</SelectItem>
                       ))}
                     </SelectContent>
@@ -265,7 +303,7 @@ export default function PublicFormPage() {
 
                 {field.type === 'radio' && (
                   <RadioGroup onValueChange={(val) => setValue(field.id, val)}>
-                    {field.options?.map((opt, idx) => (
+                    {field.options?.map((opt: string, idx: number) => (
                       <div key={idx} className="flex items-center space-x-2">
                         <RadioGroupItem value={opt} id={`${field.id}-${idx}`} />
                         <Label htmlFor={`${field.id}-${idx}`}>{opt}</Label>
