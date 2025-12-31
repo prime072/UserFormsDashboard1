@@ -1,7 +1,6 @@
 import { useRoute, useLocation } from "wouter";
-import { useForms, OutputFormat } from "@/lib/form-context";
+import { OutputFormat } from "@/lib/form-context";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, ArrowLeft, Share2, Download, FileJson, File } from "lucide-react";
 import { generateExcel, generateDocx, generatePdf, generateWhatsAppShareMessage } from "@/lib/output-generators";
@@ -9,27 +8,43 @@ import { useState, useEffect } from "react";
 
 export default function SubmissionConfirmation() {
   const [match, params] = useRoute("/s/:id/confirmation/:submissionId");
-  const { getForm, getFormResponses } = useForms();
   const [, setLocation] = useLocation();
+  const [form, setForm] = useState<any>(null);
   const [response, setResponse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const formId = params?.id;
   const submissionId = params?.submissionId;
 
-  const form = formId ? getForm(formId) : undefined;
-
   useEffect(() => {
-    if (submissionId) {
-      fetch(`/api/responses/${submissionId}`)
-        .then(res => res.ok ? res.json() : null)
-        .then(data => {
-          setResponse(data);
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
+    const fetchData = async () => {
+      try {
+        // Fetch form and response in parallel
+        const [formRes, responseRes] = await Promise.all([
+          fetch(`/api/forms/${formId}`),
+          fetch(`/api/responses/${submissionId}`),
+        ]);
+
+        if (formRes.ok) {
+          const formData = await formRes.json();
+          setForm(formData);
+        }
+
+        if (responseRes.ok) {
+          const responseData = await responseRes.json();
+          setResponse(responseData);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (formId && submissionId) {
+      fetchData();
     }
-  }, [submissionId]);
+  }, [formId, submissionId]);
 
   if (loading) {
     return (
@@ -173,11 +188,11 @@ export default function SubmissionConfirmation() {
               Fill Form Again
             </Button>
             <Button 
-              onClick={() => setLocation("/dashboard")}
+              onClick={() => setLocation("/")}
               className="gap-2"
-              data-testid="button-back-to-dashboard"
+              data-testid="button-back-to-home"
             >
-              Back to Dashboard
+              Back to Home
             </Button>
           </div>
         </CardContent>
