@@ -22,8 +22,11 @@ export const forms = pgTable("forms", {
   userId: varchar("user_id").notNull(),
   title: text("title").notNull(),
   status: text("status").notNull().default("Active"),
+  visibility: text("visibility").notNull().default("public"),
   fields: jsonb("fields").notNull(),
   outputFormats: jsonb("output_formats").notNull().default(sql`'["thank_you"]'::jsonb`),
+  confirmationStyle: text("confirmation_style").notNull().default("table"),
+  confirmationText: text("confirmation_text"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

@@ -26,6 +26,8 @@ export interface Form {
   fields: FormField[];
   outputFormats?: OutputFormat[];
   visibility?: "public" | "private";
+  confirmationStyle: "table" | "paragraph";
+  confirmationText?: string;
 }
 
 export interface FormResponse {
@@ -38,8 +40,8 @@ export interface FormResponse {
 type FormContextType = {
   forms: Form[];
   responses: FormResponse[];
-  addForm: (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private") => Promise<void>;
-  updateForm: (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private") => Promise<void>;
+  addForm: (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle?: "table" | "paragraph", confirmationText?: string) => Promise<void>;
+  updateForm: (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle?: "table" | "paragraph", confirmationText?: string) => Promise<void>;
   deleteForm: (id: string) => Promise<void>;
   getForm: (id: string) => Form | undefined;
   submitResponse: (formId: string, data: any) => Promise<{ submissionId: string }>;
@@ -51,26 +53,28 @@ type FormContextType = {
 
 const FormContext = createContext<FormContextType | null>(null);
 
-const INITIAL_FORMS: Form[] = [
-  { 
-    id: "1", 
-    title: "Customer Feedback", 
-    responses: 0, 
-    status: "Active", 
-    lastUpdated: new Date().toISOString(),
-    fields: [],
-    outputFormats: ["thank_you", "excel", "docx"]
-  },
-  { 
-    id: "2", 
-    title: "Event Registration", 
-    responses: 0, 
-    status: "Active", 
-    lastUpdated: new Date().toISOString(),
-    fields: [],
-    outputFormats: ["thank_you", "whatsapp"]
-  },
-];
+  const INITIAL_FORMS: Form[] = [
+    { 
+      id: "1", 
+      title: "Customer Feedback", 
+      responses: 0, 
+      status: "Active", 
+      lastUpdated: new Date().toISOString(),
+      fields: [],
+      outputFormats: ["thank_you", "excel", "docx"],
+      confirmationStyle: "table"
+    },
+    { 
+      id: "2", 
+      title: "Event Registration", 
+      responses: 0, 
+      status: "Active", 
+      lastUpdated: new Date().toISOString(),
+      fields: [],
+      outputFormats: ["thank_you", "whatsapp"],
+      confirmationStyle: "table"
+    },
+  ];
 
 export function FormProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -118,7 +122,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addForm = async (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private") => {
+  const addForm = async (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle: "table" | "paragraph" = "table", confirmationText?: string) => {
     if (!user?.id) return;
     try {
       const response = await fetch("/api/forms", {
@@ -132,6 +136,8 @@ export function FormProvider({ children }: { children: ReactNode }) {
           fields,
           outputFormats: outputFormats || ["thank_you"],
           visibility: visibility || "public",
+          confirmationStyle,
+          confirmationText,
         }),
       });
       if (response.ok) {
@@ -143,7 +149,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateForm = async (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private") => {
+  const updateForm = async (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle: "table" | "paragraph" = "table", confirmationText?: string) => {
     if (!user?.id) return;
     try {
       const response = await fetch(`/api/forms/${id}`, {
@@ -157,6 +163,8 @@ export function FormProvider({ children }: { children: ReactNode }) {
           fields,
           outputFormats: outputFormats || ["thank_you"],
           visibility: visibility || "public",
+          confirmationStyle,
+          confirmationText,
         }),
       });
       if (response.ok) {
@@ -289,7 +297,7 @@ export async function generateExcel(formTitle: string, responseData: any) {
   XLSX.writeFile(workbook, filename);
 }
 
-export async function generateDocx(formTitle: string, responseData: any) {
+export async function generateDocx(formTitle: string, responseData: any, customText?: string) {
   const filteredData = Object.entries(responseData)
     .filter(([key]) => key !== 'id' && key !== 'submittedAt');
 
@@ -323,14 +331,14 @@ export async function generateDocx(formTitle: string, responseData: any) {
       children: [
         new Paragraph(formTitle),
         new Paragraph(`Generated: ${new Date().toLocaleString()}`),
+        ...(customText ? [new Paragraph(""), new Paragraph(customText), new Paragraph("")] : []),
         table
       ]
     }]
   });
 
-  const buffer = await Packer.toBuffer(doc);
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-  const url = URL.createObjectURL(blob);
+  const buffer = await Packer.toBlob(doc);
+  const url = URL.createObjectURL(buffer);
   const a = document.createElement('a');
   a.href = url;
   a.download = `${formTitle}-response-${new Date().toISOString().split('T')[0]}.docx`;
@@ -338,7 +346,7 @@ export async function generateDocx(formTitle: string, responseData: any) {
   URL.revokeObjectURL(url);
 }
 
-export function generatePdf(formTitle: string, responseData: any) {
+export function generatePdf(formTitle: string, responseData: any, customText?: string) {
   const doc = new jsPDF();
   
   doc.setFontSize(20);
@@ -347,7 +355,15 @@ export function generatePdf(formTitle: string, responseData: any) {
   doc.setFontSize(10);
   doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 30);
   
-  let yPosition = 45;
+  let yPosition = 40;
+
+  if (customText) {
+    doc.setFontSize(12);
+    const splitText = doc.splitTextToSize(customText, 170);
+    doc.text(splitText, 20, yPosition);
+    yPosition += splitText.length * 7 + 10;
+  }
+
   doc.setFontSize(12);
   
   Object.entries(responseData)

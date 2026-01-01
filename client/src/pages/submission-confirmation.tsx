@@ -80,11 +80,11 @@ export default function SubmissionConfirmation() {
   };
 
   const handleDownloadDocx = async () => {
-    await generateDocx(form.title, data);
+    await generateDocx(form.title, data, form.confirmationStyle === "paragraph" ? form.confirmationText : undefined);
   };
 
   const handleDownloadPdf = () => {
-    generatePdf(form.title, data);
+    generatePdf(form.title, data, form.confirmationStyle === "paragraph" ? form.confirmationText : undefined);
   };
 
   const handleWhatsAppShare = () => {
@@ -109,19 +109,28 @@ export default function SubmissionConfirmation() {
 
         <CardContent className="pt-8 space-y-6">
           {/* Response Summary */}
-          <div className="bg-slate-50 rounded-lg p-6 border border-slate-200">
-            <h3 className="font-semibold text-slate-900 mb-4">Your Response Summary</h3>
-            <div className="space-y-3 max-h-48 overflow-y-auto">
-              {Object.entries(data).map(([key, value]) => (
-                key !== 'id' && key !== 'submittedAt' && (
-                  <div key={key} className="flex justify-between items-start gap-4">
-                    <span className="text-sm font-medium text-slate-700 capitalize">{key}:</span>
-                    <span className="text-sm text-slate-600 text-right max-w-xs truncate" title={String(value)}>{String(value)}</span>
-                  </div>
-                )
-              ))}
+          {form.confirmationStyle === "paragraph" ? (
+            <div className="bg-slate-50 rounded-lg p-6 border border-slate-200">
+              <h3 className="font-semibold text-slate-900 mb-4">Submission Details</h3>
+              <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
+                {form.confirmationText || "Thank you for your response."}
+              </p>
             </div>
-          </div>
+          ) : (
+            <div className="bg-slate-50 rounded-lg p-6 border border-slate-200">
+              <h3 className="font-semibold text-slate-900 mb-4">Your Response Summary</h3>
+              <div className="space-y-3 max-h-48 overflow-y-auto">
+                {Object.entries(data).map(([key, value]) => (
+                  key !== 'id' && key !== 'submittedAt' && (
+                    <div key={key} className="flex justify-between items-start gap-4">
+                      <span className="text-sm font-medium text-slate-700 capitalize">{key}:</span>
+                      <span className="text-sm text-slate-600 text-right max-w-xs truncate" title={String(value)}>{String(value)}</span>
+                    </div>
+                  )
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Download/Share Options */}
           {outputFormats.length > 1 && (

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Layout from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,6 +32,8 @@ export default function FormBuilder() {
   ]);
   const [outputFormats, setOutputFormats] = useState<OutputFormat[]>(["thank_you"]);
   const [visibility, setVisibility] = useState<"public" | "private">("public");
+  const [confirmationStyle, setConfirmationStyle] = useState<"table" | "paragraph">("table");
+  const [confirmationText, setConfirmationText] = useState("");
 
   useEffect(() => {
     if (isEditing && formId) {
@@ -40,6 +43,8 @@ export default function FormBuilder() {
         setFields(existingForm.fields.length > 0 ? existingForm.fields : fields);
         setOutputFormats(existingForm.outputFormats || ["thank_you"]);
         setVisibility(existingForm.visibility || "public");
+        setConfirmationStyle(existingForm.confirmationStyle || "table");
+        setConfirmationText(existingForm.confirmationText || "");
       }
     }
   }, [isEditing, formId]);
@@ -84,13 +89,13 @@ export default function FormBuilder() {
   const handleSave = async () => {
     try {
       if (isEditing && formId) {
-        await updateForm(formId, title, fields, outputFormats, visibility as any);
+        await updateForm(formId, title, fields, outputFormats, visibility, confirmationStyle, confirmationText);
         toast({
           title: "Form Updated",
           description: "Your changes have been saved.",
         });
       } else {
-        await addForm(title, fields, outputFormats, visibility as any);
+        await addForm(title, fields, outputFormats, visibility, confirmationStyle, confirmationText);
         toast({
           title: "Form Created",
           description: "Your form has been created successfully.",
@@ -163,7 +168,7 @@ export default function FormBuilder() {
                   onChange={(e) => setVisibility(e.target.value as "public" | "private")}
                   className="w-4 h-4"
                 />
-                <span className="text-sm">Public - Anyone with link can submit</span>
+                <span className="text-sm">Public</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input 
@@ -174,10 +179,52 @@ export default function FormBuilder() {
                   onChange={(e) => setVisibility(e.target.value as "public" | "private")}
                   className="w-4 h-4"
                 />
-                <span className="text-sm">Private - Only specific users can access</span>
+                <span className="text-sm">Private</span>
               </label>
             </div>
           </div>
+
+          <div className="bg-white p-6 rounded-lg border border-slate-200">
+            <Label className="text-sm font-semibold mb-3 block">Confirmation Page Design</Label>
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="confirmationStyle" 
+                    value="table" 
+                    checked={confirmationStyle === "table"}
+                    onChange={(e) => setConfirmationStyle(e.target.value as "table" | "paragraph")}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">Response Table</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="confirmationStyle" 
+                    value="paragraph" 
+                    checked={confirmationStyle === "paragraph"}
+                    onChange={(e) => setConfirmationStyle(e.target.value as "table" | "paragraph")}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">Custom Paragraph</span>
+                </label>
+              </div>
+              {confirmationStyle === "paragraph" && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-slate-500">Custom message to show after submission</Label>
+                  <Textarea 
+                    value={confirmationText}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConfirmationText(e.target.value)}
+                    placeholder="Enter your custom message here..."
+                    className="h-24"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
           <OutputSettings 
             selectedFormats={outputFormats}
             onChange={setOutputFormats}
