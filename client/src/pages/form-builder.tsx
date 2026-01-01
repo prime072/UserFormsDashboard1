@@ -225,10 +225,15 @@ export default function FormBuilder() {
             </div>
           </div>
 
-          <OutputSettings 
-            selectedFormats={outputFormats}
-            onChange={setOutputFormats}
-          />
+            <OutputSettings 
+              selectedFormats={outputFormats}
+              onChange={setOutputFormats}
+              fields={fields}
+              tableConfig={tableConfig}
+              onTableConfigChange={setTableConfig}
+              whatsappFormat={whatsappFormat}
+              onWhatsappFormatChange={setWhatsappFormat}
+            />
         </div>
 
         {/* Form Canvas */}

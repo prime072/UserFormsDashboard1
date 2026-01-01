@@ -17,6 +17,12 @@ export interface FormField {
   options?: string[];
 }
 
+export interface TableVariable {
+  id: string;
+  header: string;
+  fieldId: string; // 'all' or specific field id
+}
+
 export interface Form {
   id: string;
   title: string;
@@ -28,6 +34,8 @@ export interface Form {
   visibility?: "public" | "private";
   confirmationStyle: "table" | "paragraph";
   confirmationText?: string;
+  tableConfig?: TableVariable[];
+  whatsappFormat?: string;
 }
 
 export interface FormResponse {
@@ -40,8 +48,8 @@ export interface FormResponse {
 type FormContextType = {
   forms: Form[];
   responses: FormResponse[];
-  addForm: (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle?: "table" | "paragraph", confirmationText?: string) => Promise<void>;
-  updateForm: (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle?: "table" | "paragraph", confirmationText?: string) => Promise<void>;
+  addForm: (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle?: "table" | "paragraph", confirmationText?: string, tableConfig?: TableVariable[], whatsappFormat?: string) => Promise<void>;
+  updateForm: (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle?: "table" | "paragraph", confirmationText?: string, tableConfig?: TableVariable[], whatsappFormat?: string) => Promise<void>;
   deleteForm: (id: string) => Promise<void>;
   getForm: (id: string) => Form | undefined;
   submitResponse: (formId: string, data: any) => Promise<{ submissionId: string }>;
@@ -122,7 +130,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addForm = async (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle: "table" | "paragraph" = "table", confirmationText?: string) => {
+  const addForm = async (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle: "table" | "paragraph" = "table", confirmationText?: string, tableConfig?: TableVariable[], whatsappFormat?: string) => {
     if (!user?.id) return;
     try {
       const response = await fetch("/api/forms", {
@@ -138,6 +146,8 @@ export function FormProvider({ children }: { children: ReactNode }) {
           visibility: visibility || "public",
           confirmationStyle,
           confirmationText,
+          tableConfig,
+          whatsappFormat,
         }),
       });
       if (response.ok) {
@@ -149,7 +159,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateForm = async (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle: "table" | "paragraph" = "table", confirmationText?: string) => {
+  const updateForm = async (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle: "table" | "paragraph" = "table", confirmationText?: string, tableConfig?: TableVariable[], whatsappFormat?: string) => {
     if (!user?.id) return;
     try {
       const response = await fetch(`/api/forms/${id}`, {
@@ -165,6 +175,8 @@ export function FormProvider({ children }: { children: ReactNode }) {
           visibility: visibility || "public",
           confirmationStyle,
           confirmationText,
+          tableConfig,
+          whatsappFormat,
         }),
       });
       if (response.ok) {
@@ -297,18 +309,26 @@ export async function generateExcel(formTitle: string, responseData: any) {
   XLSX.writeFile(workbook, filename);
 }
 
-export async function generateDocx(formTitle: string, responseData: any, customText?: string) {
-  const filteredData = Object.entries(responseData)
-    .filter(([key]) => key !== 'id' && key !== 'submittedAt');
+export async function generateDocx(formTitle: string, responseData: any, customText?: string, tableConfig?: TableVariable[]) {
+  const tableData = tableConfig && tableConfig.length > 0
+    ? tableConfig.map(config => ({
+        label: config.header,
+        value: config.fieldId === 'all' 
+          ? JSON.stringify(responseData) 
+          : String(responseData[config.header] || responseData[config.fieldId] || '')
+      }))
+    : Object.entries(responseData)
+        .filter(([key]) => key !== 'id' && key !== 'submittedAt')
+        .map(([key, value]) => ({ label: key, value: String(value || '') }));
 
-  const rows = filteredData.map(([key, value]) => {
+  const rows = tableData.map(({ label, value }) => {
     return new TableRow({
       children: [
         new TableCell({
-          children: [new Paragraph(key)],
+          children: [new Paragraph(label)],
         }),
         new TableCell({
-          children: [new Paragraph(String(value || ''))],
+          children: [new Paragraph(value)],
         }),
       ],
     });
@@ -346,7 +366,7 @@ export async function generateDocx(formTitle: string, responseData: any, customT
   URL.revokeObjectURL(url);
 }
 
-export function generatePdf(formTitle: string, responseData: any, customText?: string) {
+export function generatePdf(formTitle: string, responseData: any, customText?: string, tableConfig?: TableVariable[]) {
   const doc = new jsPDF();
   
   doc.setFontSize(20);
@@ -364,29 +384,48 @@ export function generatePdf(formTitle: string, responseData: any, customText?: s
     yPosition += splitText.length * 7 + 10;
   }
 
+  const tableData = tableConfig && tableConfig.length > 0
+    ? tableConfig.map(config => ({
+        label: config.header,
+        value: config.fieldId === 'all' 
+          ? JSON.stringify(responseData) 
+          : String(responseData[config.header] || responseData[config.fieldId] || '')
+      }))
+    : Object.entries(responseData)
+        .filter(([key]) => key !== 'id' && key !== 'submittedAt')
+        .map(([key, value]) => ({ label: key, value: String(value || '') }));
+
   doc.setFontSize(12);
   
-  Object.entries(responseData)
-    .filter(([key]) => key !== 'id' && key !== 'submittedAt')
-    .forEach(([key, value]) => {
-      if (yPosition > 270) {
-        doc.addPage();
-        yPosition = 20;
-      }
-      doc.text(`${key}:`, 20, yPosition);
-      yPosition += 7;
-      const valueText = String(value || '');
-      const wrappedText = doc.splitTextToSize(valueText, 170);
-      doc.setFontSize(11);
-      doc.text(wrappedText, 30, yPosition);
-      yPosition += wrappedText.length * 7 + 5;
-      doc.setFontSize(12);
-    });
+  tableData.forEach(({ label, value }) => {
+    if (yPosition > 270) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    doc.text(`${label}:`, 20, yPosition);
+    yPosition += 7;
+    const wrappedText = doc.splitTextToSize(value, 170);
+    doc.setFontSize(11);
+    doc.text(wrappedText, 30, yPosition);
+    yPosition += wrappedText.length * 7 + 5;
+    doc.setFontSize(12);
+  });
   
   doc.save(`${formTitle}-response-${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
-export function generateWhatsAppShareMessage(formTitle: string, responseData: any, formUrl: string): string {
+export function generateWhatsAppShareMessage(formTitle: string, responseData: any, formUrl: string, customFormat?: string): string {
+  if (customFormat) {
+    let message = customFormat;
+    Object.entries(responseData).forEach(([key, value]) => {
+      const placeholder = `{{${key}}}`;
+      message = message.replace(new RegExp(placeholder, 'g'), String(value));
+    });
+    message = message.replace(/{{form_url}}/g, formUrl);
+    message = message.replace(/{{form_title}}/g, formTitle);
+    return message;
+  }
+
   const summary = Object.entries(responseData)
     .filter(([key]) => key !== 'id' && key !== 'submittedAt')
     .map(([key, value]) => `${String(key).charAt(0).toUpperCase() + String(key).slice(1)}: ${value}`)

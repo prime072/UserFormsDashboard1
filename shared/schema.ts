@@ -27,6 +27,8 @@ export const forms = pgTable("forms", {
   outputFormats: jsonb("output_formats").notNull().default(sql`'["thank_you"]'::jsonb`),
   confirmationStyle: text("confirmation_style").notNull().default("table"),
   confirmationText: text("confirmation_text"),
+  tableConfig: jsonb("table_config"),
+  whatsappFormat: text("whatsapp_format"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

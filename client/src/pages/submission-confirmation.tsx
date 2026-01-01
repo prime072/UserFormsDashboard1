@@ -3,7 +3,7 @@ import { OutputFormat } from "@/lib/form-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, ArrowLeft, Share2, Download, FileJson, File } from "lucide-react";
-import { generateExcel, generateDocx, generatePdf, generateWhatsAppShareMessage } from "@/lib/output-generators";
+import { generateExcel, generateDocx, generatePdf, generateWhatsAppShareMessage } from "@/lib/form-context";
 import { useState, useEffect } from "react";
 
 export default function SubmissionConfirmation() {
@@ -80,16 +80,16 @@ export default function SubmissionConfirmation() {
   };
 
   const handleDownloadDocx = async () => {
-    await generateDocx(form.title, data, form.confirmationStyle === "paragraph" ? form.confirmationText : undefined);
+    await generateDocx(form.title, data, form.confirmationStyle === "paragraph" ? form.confirmationText : undefined, form.tableConfig);
   };
 
   const handleDownloadPdf = () => {
-    generatePdf(form.title, data, form.confirmationStyle === "paragraph" ? form.confirmationText : undefined);
+    generatePdf(form.title, data, form.confirmationStyle === "paragraph" ? form.confirmationText : undefined, form.tableConfig);
   };
 
   const handleWhatsAppShare = () => {
     const formUrl = `${window.location.origin}/s/${formId}`;
-    const message = generateWhatsAppShareMessage(form.title, data, formUrl);
+    const message = generateWhatsAppShareMessage(form.title, data, formUrl, form.whatsappFormat);
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -113,21 +113,41 @@ export default function SubmissionConfirmation() {
             <div className="bg-slate-50 rounded-lg p-6 border border-slate-200">
               <h3 className="font-semibold text-slate-900 mb-4">Submission Details</h3>
               <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
-                {form.confirmationText || "Thank you for your response."}
+                {(() => {
+                  let text = form.confirmationText || "Thank you for your response.";
+                  Object.entries(data).forEach(([key, value]) => {
+                    const placeholder = `{{${key}}}`;
+                    text = text.replace(new RegExp(placeholder, 'g'), String(value));
+                  });
+                  return text;
+                })()}
               </p>
             </div>
           ) : (
             <div className="bg-slate-50 rounded-lg p-6 border border-slate-200">
               <h3 className="font-semibold text-slate-900 mb-4">Your Response Summary</h3>
               <div className="space-y-3 max-h-48 overflow-y-auto">
-                {Object.entries(data).map(([key, value]) => (
-                  key !== 'id' && key !== 'submittedAt' && (
-                    <div key={key} className="flex justify-between items-start gap-4">
-                      <span className="text-sm font-medium text-slate-700 capitalize">{key}:</span>
-                      <span className="text-sm text-slate-600 text-right max-w-xs truncate" title={String(value)}>{String(value)}</span>
+                {form.tableConfig && form.tableConfig.length > 0 ? (
+                  form.tableConfig.map((config: any) => (
+                    <div key={config.id} className="flex justify-between items-start gap-4">
+                      <span className="text-sm font-medium text-slate-700">{config.header}:</span>
+                      <span className="text-sm text-slate-600 text-right max-w-xs truncate">
+                        {config.fieldId === 'all' 
+                          ? JSON.stringify(data)
+                          : String(data[config.header] || data[config.fieldId] || '')}
+                      </span>
                     </div>
-                  )
-                ))}
+                  ))
+                ) : (
+                  Object.entries(data).map(([key, value]) => (
+                    key !== 'id' && key !== 'submittedAt' && (
+                      <div key={key} className="flex justify-between items-start gap-4">
+                        <span className="text-sm font-medium text-slate-700 capitalize">{key}:</span>
+                        <span className="text-sm text-slate-600 text-right max-w-xs truncate" title={String(value)}>{String(value)}</span>
+                      </div>
+                    )
+                  ))
+                )}
               </div>
             </div>
           )}
