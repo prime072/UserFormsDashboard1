@@ -34,6 +34,8 @@ export default function FormBuilder() {
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [confirmationStyle, setConfirmationStyle] = useState<"table" | "paragraph">("table");
   const [confirmationText, setConfirmationText] = useState("");
+  const [tableConfig, setTableConfig] = useState<TableVariable[]>([]);
+  const [whatsappFormat, setWhatsappFormat] = useState("");
 
   useEffect(() => {
     if (isEditing && formId) {
@@ -45,9 +47,11 @@ export default function FormBuilder() {
         setVisibility(existingForm.visibility || "public");
         setConfirmationStyle(existingForm.confirmationStyle || "table");
         setConfirmationText(existingForm.confirmationText || "");
+        setTableConfig(existingForm.tableConfig || []);
+        setWhatsappFormat(existingForm.whatsappFormat || "");
       }
     }
-  }, [isEditing, formId]);
+  }, [isEditing, formId, getForm]);
 
   const addField = () => {
     const newField: FormField = {
@@ -89,13 +93,13 @@ export default function FormBuilder() {
   const handleSave = async () => {
     try {
       if (isEditing && formId) {
-        await updateForm(formId, title, fields, outputFormats, visibility, confirmationStyle, confirmationText);
+        await updateForm(formId, title, fields, outputFormats, visibility, confirmationStyle, confirmationText, tableConfig, whatsappFormat);
         toast({
           title: "Form Updated",
           description: "Your changes have been saved.",
         });
       } else {
-        await addForm(title, fields, outputFormats, visibility, confirmationStyle, confirmationText);
+        await addForm(title, fields, outputFormats, visibility, confirmationStyle, confirmationText, tableConfig, whatsappFormat);
         toast({
           title: "Form Created",
           description: "Your form has been created successfully.",

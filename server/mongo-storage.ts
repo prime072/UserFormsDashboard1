@@ -28,6 +28,8 @@ const formSchema = new mongoose.Schema({
   visibility: { type: String, enum: ["public", "private"], default: "public" },
   fields: mongoose.Schema.Types.Mixed,
   outputFormats: { type: Array, default: ["thank_you"] },
+  tableConfig: { type: Array, default: [] },
+  whatsappFormat: { type: String, default: "" },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
