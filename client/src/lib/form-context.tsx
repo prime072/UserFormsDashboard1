@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { formatDistanceToNow } from "date-fns";
 import * as XLSX from 'xlsx';
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle } from 'docx';
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle, AlignmentType, ShadingType } from 'docx';
 import jsPDF from 'jspdf';
 import { useAuth } from "./auth-context";
 
@@ -17,11 +17,24 @@ export interface FormField {
   options?: string[];
 }
 
-export interface TableVariable {
+export interface TableCell {
   id: string;
-  header: string;
-  fieldId: string; // 'all' or specific field id
+  type: "text" | "variable";
+  value: string;
+  color?: string;
 }
+
+export interface TableRow {
+  id: string;
+  cells: TableCell[];
+}
+
+export interface GridConfig {
+  headers: string[];
+  rows: TableRow[];
+}
+
+export type TableVariable = any;
 
 export interface Form {
   id: string;
@@ -34,8 +47,9 @@ export interface Form {
   visibility?: "public" | "private";
   confirmationStyle: "table" | "paragraph";
   confirmationText?: string;
-  tableConfig?: TableVariable[];
+  gridConfig?: GridConfig;
   whatsappFormat?: string;
+  allowEditing?: boolean;
 }
 
 export interface FormResponse {
@@ -48,8 +62,8 @@ export interface FormResponse {
 type FormContextType = {
   forms: Form[];
   responses: FormResponse[];
-  addForm: (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle?: "table" | "paragraph", confirmationText?: string, tableConfig?: TableVariable[], whatsappFormat?: string) => Promise<void>;
-  updateForm: (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle?: "table" | "paragraph", confirmationText?: string, tableConfig?: TableVariable[], whatsappFormat?: string) => Promise<void>;
+  addForm: (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle?: "table" | "paragraph", confirmationText?: string, tableConfig?: any[], whatsappFormat?: string, gridConfig?: GridConfig, allowEditing?: boolean) => Promise<void>;
+  updateForm: (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle?: "table" | "paragraph", confirmationText?: string, tableConfig?: any[], whatsappFormat?: string, gridConfig?: GridConfig, allowEditing?: boolean) => Promise<void>;
   deleteForm: (id: string) => Promise<void>;
   getForm: (id: string) => Form | undefined;
   submitResponse: (formId: string, data: any) => Promise<{ submissionId: string }>;
@@ -60,29 +74,6 @@ type FormContextType = {
 };
 
 const FormContext = createContext<FormContextType | null>(null);
-
-  const INITIAL_FORMS: Form[] = [
-    { 
-      id: "1", 
-      title: "Customer Feedback", 
-      responses: 0, 
-      status: "Active", 
-      lastUpdated: new Date().toISOString(),
-      fields: [],
-      outputFormats: ["thank_you", "excel", "docx"],
-      confirmationStyle: "table"
-    },
-    { 
-      id: "2", 
-      title: "Event Registration", 
-      responses: 0, 
-      status: "Active", 
-      lastUpdated: new Date().toISOString(),
-      fields: [],
-      outputFormats: ["thank_you", "whatsapp"],
-      confirmationStyle: "table"
-    },
-  ];
 
 export function FormProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -130,7 +121,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addForm = async (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle: "table" | "paragraph" = "table", confirmationText?: string, tableConfig?: TableVariable[], whatsappFormat?: string) => {
+  const addForm = async (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle: "table" | "paragraph" = "table", confirmationText?: string, tableConfig?: any[], whatsappFormat?: string, gridConfig?: GridConfig, allowEditing: boolean = true) => {
     if (!user?.id) return;
     try {
       const response = await fetch("/api/forms", {
@@ -148,6 +139,8 @@ export function FormProvider({ children }: { children: ReactNode }) {
           confirmationText,
           tableConfig,
           whatsappFormat,
+          gridConfig,
+          allowEditing,
         }),
       });
       if (response.ok) {
@@ -159,7 +152,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateForm = async (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle: "table" | "paragraph" = "table", confirmationText?: string, tableConfig?: TableVariable[], whatsappFormat?: string) => {
+  const updateForm = async (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle: "table" | "paragraph" = "table", confirmationText?: string, tableConfig?: any[], whatsappFormat?: string, gridConfig?: GridConfig, allowEditing: boolean = true) => {
     if (!user?.id) return;
     try {
       const response = await fetch(`/api/forms/${id}`, {
@@ -177,6 +170,8 @@ export function FormProvider({ children }: { children: ReactNode }) {
           confirmationText,
           tableConfig,
           whatsappFormat,
+          gridConfig,
+          allowEditing,
         }),
       });
       if (response.ok) {
@@ -225,7 +220,6 @@ export function FormProvider({ children }: { children: ReactNode }) {
       
       const newResponse = await response.json();
       
-      // Update local form count
       const updatedForms = forms.map(f => 
         f.id === formId 
           ? { ...f, responses: f.responses + 1, lastUpdated: new Date().toISOString() }
@@ -233,7 +227,6 @@ export function FormProvider({ children }: { children: ReactNode }) {
       );
       setForms(updatedForms);
       
-      // Add to local responses
       const updatedResponses = [newResponse, ...responses];
       setResponses(updatedResponses);
       
@@ -300,7 +293,6 @@ export function useForms() {
   return context;
 }
 
-// Export generators
 export async function generateExcel(formTitle: string, responseData: any) {
   const worksheet = XLSX.utils.json_to_sheet([responseData]);
   const workbook = XLSX.utils.book_new();
@@ -309,50 +301,58 @@ export async function generateExcel(formTitle: string, responseData: any) {
   XLSX.writeFile(workbook, filename);
 }
 
-export async function generateDocx(formTitle: string, responseData: any, customText?: string, tableConfig?: TableVariable[]) {
-  const tableData = tableConfig && tableConfig.length > 0
-    ? tableConfig.map(config => ({
-        label: config.header,
-        value: config.fieldId === 'all' 
-          ? JSON.stringify(responseData) 
-          : String(responseData[config.header] || responseData[config.fieldId] || '')
+export async function generateDocx(formTitle: string, responseData: any, customText?: string, gridConfig?: GridConfig) {
+  const docRows = [];
+
+  if (gridConfig && gridConfig.rows.length > 0) {
+    const headerRow = new TableRow({
+      children: gridConfig.headers.map(h => new TableCell({
+        children: [new Paragraph({ text: h, bold: true })],
+        shading: { fill: "f1f5f9", type: ShadingType.CLEAR }
       }))
-    : Object.entries(responseData)
-        .filter(([key]) => key !== 'id' && key !== 'submittedAt')
-        .map(([key, value]) => ({ label: key, value: String(value || '') }));
-
-  const rows = tableData.map(({ label, value }) => {
-    return new TableRow({
-      children: [
-        new TableCell({
-          children: [new Paragraph(label)],
-        }),
-        new TableCell({
-          children: [new Paragraph(value)],
-        }),
-      ],
     });
-  });
 
-  const headerRow = new TableRow({
-    children: [
-      new TableCell({ children: [new Paragraph("Field")] }),
-      new TableCell({ children: [new Paragraph("Response")] }),
-    ],
-  });
+    const bodyRows = gridConfig.rows.map(row => new TableRow({
+      children: row.cells.map(cell => {
+        let value = cell.value;
+        if (cell.type === "variable") {
+          value = String(responseData[cell.value] || "");
+        }
+        return new TableCell({
+          children: [new Paragraph(value)],
+          shading: cell.color ? { fill: cell.color.replace("#", ""), type: ShadingType.CLEAR } : undefined
+        });
+      })
+    }));
 
-  const table = new Table({
-    rows: [headerRow, ...rows],
-    width: { size: 100, type: WidthType.PERCENTAGE },
-  });
+    docRows.push(new Table({
+      rows: [headerRow, ...bodyRows],
+      width: { size: 100, type: WidthType.PERCENTAGE }
+    }));
+  } else {
+    const tableRows = Object.entries(responseData)
+      .filter(([key]) => key !== 'id' && key !== 'submittedAt')
+      .map(([key, value]) => new TableRow({
+        children: [
+          new TableCell({ children: [new Paragraph({ text: key, bold: true })] }),
+          new TableCell({ children: [new Paragraph(String(value || ""))] })
+        ]
+      }));
+
+    docRows.push(new Table({
+      rows: tableRows,
+      width: { size: 100, type: WidthType.PERCENTAGE }
+    }));
+  }
 
   const doc = new Document({
     sections: [{
       children: [
-        new Paragraph(formTitle),
-        new Paragraph(`Generated: ${new Date().toLocaleString()}`),
-        ...(customText ? [new Paragraph(""), new Paragraph(customText), new Paragraph("")] : []),
-        table
+        new Paragraph({ text: formTitle, heading: "Heading1", alignment: AlignmentType.CENTER }),
+        new Paragraph({ text: `Generated: ${new Date().toLocaleString()}`, alignment: AlignmentType.CENTER }),
+        new Paragraph(""),
+        ...(customText ? [new Paragraph(customText), new Paragraph("")] : []),
+        ...docRows
       ]
     }]
   });
@@ -366,51 +366,66 @@ export async function generateDocx(formTitle: string, responseData: any, customT
   URL.revokeObjectURL(url);
 }
 
-export function generatePdf(formTitle: string, responseData: any, customText?: string, tableConfig?: TableVariable[]) {
+export function generatePdf(formTitle: string, responseData: any, customText?: string, gridConfig?: GridConfig) {
   const doc = new jsPDF();
-  
   doc.setFontSize(20);
   doc.text(formTitle, 20, 20);
-  
   doc.setFontSize(10);
   doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 30);
   
-  let yPosition = 40;
+  let y = 40;
 
   if (customText) {
     doc.setFontSize(12);
     const splitText = doc.splitTextToSize(customText, 170);
-    doc.text(splitText, 20, yPosition);
-    yPosition += splitText.length * 7 + 10;
+    doc.text(splitText, 20, y);
+    y += splitText.length * 7 + 10;
   }
 
-  const tableData = tableConfig && tableConfig.length > 0
-    ? tableConfig.map(config => ({
-        label: config.header,
-        value: config.fieldId === 'all' 
-          ? JSON.stringify(responseData) 
-          : String(responseData[config.header] || responseData[config.fieldId] || '')
-      }))
-    : Object.entries(responseData)
-        .filter(([key]) => key !== 'id' && key !== 'submittedAt')
-        .map(([key, value]) => ({ label: key, value: String(value || '') }));
+  if (gridConfig && gridConfig.rows.length > 0) {
+    const colWidth = 170 / gridConfig.headers.length;
+    doc.setFontSize(10);
+    doc.setFillColor(241, 245, 249);
+    doc.rect(20, y, 170, 10, 'F');
+    gridConfig.headers.forEach((h, i) => {
+      doc.text(h, 22 + (i * colWidth), y + 7);
+    });
+    y += 10;
 
-  doc.setFontSize(12);
-  
-  tableData.forEach(({ label, value }) => {
-    if (yPosition > 270) {
-      doc.addPage();
-      yPosition = 20;
-    }
-    doc.text(`${label}:`, 20, yPosition);
-    yPosition += 7;
-    const wrappedText = doc.splitTextToSize(value, 170);
-    doc.setFontSize(11);
-    doc.text(wrappedText, 30, yPosition);
-    yPosition += wrappedText.length * 7 + 5;
-    doc.setFontSize(12);
-  });
-  
+    gridConfig.rows.forEach(row => {
+      let maxHeight = 10;
+      row.cells.forEach((cell, i) => {
+        let val = cell.type === "variable" ? String(responseData[cell.value] || "") : cell.value;
+        const split = doc.splitTextToSize(val, colWidth - 4);
+        maxHeight = Math.max(maxHeight, split.length * 5 + 5);
+      });
+
+      if (y + maxHeight > 280) { doc.addPage(); y = 20; }
+
+      row.cells.forEach((cell, i) => {
+        if (cell.color) {
+          doc.setFillColor(cell.color);
+          doc.rect(20 + (i * colWidth), y, colWidth, maxHeight, 'F');
+        }
+        let val = cell.type === "variable" ? String(responseData[cell.value] || "") : cell.value;
+        doc.text(doc.splitTextToSize(val, colWidth - 4), 22 + (i * colWidth), y + 7);
+      });
+      y += maxHeight;
+    });
+  } else {
+    Object.entries(responseData)
+      .filter(([key]) => key !== 'id' && key !== 'submittedAt')
+      .forEach(([key, value]) => {
+        if (y > 270) { doc.addPage(); y = 20; }
+        doc.setFontSize(11);
+        doc.text(`${key}:`, 20, y);
+        doc.setFontSize(10);
+        const wrapped = doc.splitTextToSize(String(value || ""), 130);
+        doc.text(wrapped, 60, y);
+        y += wrapped.length * 5 + 5;
+      });
+  }
+
   doc.save(`${formTitle}-response-${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
@@ -418,18 +433,15 @@ export function generateWhatsAppShareMessage(formTitle: string, responseData: an
   if (customFormat) {
     let message = customFormat;
     Object.entries(responseData).forEach(([key, value]) => {
-      const placeholder = `{{${key}}}`;
-      message = message.replace(new RegExp(placeholder, 'g'), String(value));
+      message = message.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
     });
     message = message.replace(/{{form_url}}/g, formUrl);
     message = message.replace(/{{form_title}}/g, formTitle);
     return message;
   }
-
   const summary = Object.entries(responseData)
     .filter(([key]) => key !== 'id' && key !== 'submittedAt')
-    .map(([key, value]) => `${String(key).charAt(0).toUpperCase() + String(key).slice(1)}: ${value}`)
+    .map(([key, value]) => `${key}: ${value}`)
     .join('\n');
-
-  return `I just filled out the "${formTitle}" form:\n\n${summary}\n\nYou can fill it too: ${formUrl}`;
+  return `Form: ${formTitle}\n\n${summary}\n\nLink: ${formUrl}`;
 }

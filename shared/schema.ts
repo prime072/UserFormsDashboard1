@@ -28,7 +28,9 @@ export const forms = pgTable("forms", {
   confirmationStyle: text("confirmation_style").notNull().default("table"),
   confirmationText: text("confirmation_text"),
   tableConfig: jsonb("table_config"),
+  gridConfig: jsonb("grid_config"),
   whatsappFormat: text("whatsapp_format"),
+  allowEditing: text("allow_editing").default("true"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

@@ -1,18 +1,18 @@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { OutputFormat, FormField, TableVariable } from "@/lib/form-context";
+import { OutputFormat, FormField, GridConfig, TableRow, TableCell } from "@/lib/form-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, GripVertical } from "lucide-react";
 
 interface OutputSettingsProps {
   selectedFormats: OutputFormat[];
   onChange: (formats: OutputFormat[]) => void;
   fields: FormField[];
-  tableConfig: TableVariable[];
-  onTableConfigChange: (config: TableVariable[]) => void;
+  gridConfig: GridConfig;
+  onGridConfigChange: (config: GridConfig) => void;
   whatsappFormat: string;
   onWhatsappFormatChange: (format: string) => void;
 }
@@ -21,8 +21,8 @@ export default function OutputSettings({
   selectedFormats, 
   onChange,
   fields,
-  tableConfig,
-  onTableConfigChange,
+  gridConfig,
+  onGridConfigChange,
   whatsappFormat,
   onWhatsappFormatChange
 }: OutputSettingsProps) {
@@ -42,21 +42,64 @@ export default function OutputSettings({
     }
   };
 
-  const addTableColumn = () => {
-    const newCol: TableVariable = {
+  const addRow = () => {
+    const newRow: TableRow = {
       id: Math.random().toString(36).substr(2, 9),
-      header: "Column Header",
-      fieldId: fields[0]?.id || "all"
+      cells: gridConfig.headers.map(() => ({
+        id: Math.random().toString(36).substr(2, 9),
+        type: "text",
+        value: "",
+        color: "#ffffff"
+      }))
     };
-    onTableConfigChange([...tableConfig, newCol]);
+    onGridConfigChange({
+      ...gridConfig,
+      rows: [...gridConfig.rows, newRow]
+    });
   };
 
-  const updateTableColumn = (id: string, updates: Partial<TableVariable>) => {
-    onTableConfigChange(tableConfig.map(c => c.id === id ? { ...c, ...updates } : c));
+  const addColumn = () => {
+    const newHeader = `Column ${gridConfig.headers.length + 1}`;
+    onGridConfigChange({
+      headers: [...gridConfig.headers, newHeader],
+      rows: gridConfig.rows.map(row => ({
+        ...row,
+        cells: [...row.cells, {
+          id: Math.random().toString(36).substr(2, 9),
+          type: "text",
+          value: "",
+          color: "#ffffff"
+        }]
+      }))
+    });
   };
 
-  const removeTableColumn = (id: string) => {
-    onTableConfigChange(tableConfig.filter(c => c.id !== id));
+  const removeRow = (index: number) => {
+    const newRows = [...gridConfig.rows];
+    newRows.splice(index, 1);
+    onGridConfigChange({ ...gridConfig, rows: newRows });
+  };
+
+  const removeColumn = (index: number) => {
+    onGridConfigChange({
+      headers: gridConfig.headers.filter((_, i) => i !== index),
+      rows: gridConfig.rows.map(row => ({
+        ...row,
+        cells: row.cells.filter((_, i) => i !== index)
+      }))
+    });
+  };
+
+  const updateHeader = (index: number, value: string) => {
+    const newHeaders = [...gridConfig.headers];
+    newHeaders[index] = value;
+    onGridConfigChange({ ...gridConfig, headers: newHeaders });
+  };
+
+  const updateCell = (rowIndex: number, colIndex: number, updates: Partial<TableCell>) => {
+    const newRows = [...gridConfig.rows];
+    newRows[rowIndex].cells[colIndex] = { ...newRows[rowIndex].cells[colIndex], ...updates };
+    onGridConfigChange({ ...gridConfig, rows: newRows });
   };
 
   return (
@@ -103,52 +146,111 @@ export default function OutputSettings({
 
         <div className="space-y-4 pt-4 border-t">
           <div className="flex items-center justify-between">
-            <Label className="text-sm font-semibold">Output Table Design (PDF/Word/Confirmation)</Label>
-            <Button variant="outline" size="sm" onClick={addTableColumn}>
-              <Plus className="w-4 h-4 mr-2" /> Add Column
-            </Button>
+            <Label className="text-sm font-semibold">Custom Grid Layout (PDF/Word/Confirmation)</Label>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={addColumn}>
+                <Plus className="w-4 h-4 mr-1" /> Col
+              </Button>
+              <Button variant="outline" size="sm" onClick={addRow}>
+                <Plus className="w-4 h-4 mr-1" /> Row
+              </Button>
+            </div>
           </div>
-          <p className="text-xs text-slate-500">Customize what shows up in your response summaries and exports.</p>
-          <div className="space-y-3">
-            {tableConfig.map((col) => (
-              <div key={col.id} className="flex gap-2 items-end bg-slate-50 p-3 rounded-lg border">
-                <div className="flex-1 space-y-1">
-                  <Label className="text-[10px] uppercase text-slate-500">Header Name</Label>
-                  <Input 
-                    value={col.header}
-                    onChange={(e) => updateTableColumn(col.id, { header: e.target.value })}
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div className="flex-1 space-y-1">
-                  <Label className="text-[10px] uppercase text-slate-500">Value Variable</Label>
-                  <select 
-                    value={col.fieldId}
-                    onChange={(e) => updateTableColumn(col.id, { fieldId: e.target.value })}
-                    className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="all">All Fields (JSON)</option>
-                    {fields.map(f => (
-                      <option key={f.id} value={f.id}>{f.label}</option>
+          
+          <div className="overflow-x-auto border rounded-lg">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-slate-50">
+                  <th className="w-10 border-b"></th>
+                  {gridConfig.headers.map((header, i) => (
+                    <th key={i} className="p-2 border-b border-r min-w-[150px]">
+                      <div className="flex gap-1 items-center">
+                        <Input 
+                          value={header}
+                          onChange={(e) => updateHeader(i, e.target.value)}
+                          className="h-7 text-xs font-bold bg-transparent border-none focus-visible:ring-1"
+                        />
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-5 w-5 text-slate-400 hover:text-red-500"
+                          onClick={() => removeColumn(i)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </th>
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {gridConfig.rows.map((row, rIndex) => (
+                  <tr key={row.id}>
+                    <td className="p-2 border-b border-r bg-slate-50 text-center">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-5 w-5 text-slate-400 hover:text-red-500"
+                        onClick={() => removeRow(rIndex)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </td>
+                    {row.cells.map((cell, cIndex) => (
+                      <td 
+                        key={cell.id} 
+                        className="p-2 border-b border-r"
+                        style={{ backgroundColor: cell.color }}
+                      >
+                        <div className="space-y-1">
+                          <div className="flex gap-1">
+                            <select 
+                              value={cell.type}
+                              onChange={(e) => updateCell(rIndex, cIndex, { type: e.target.value as "text" | "variable" })}
+                              className="h-6 text-[10px] rounded border"
+                            >
+                              <option value="text">Txt</option>
+                              <option value="variable">Var</option>
+                            </select>
+                            <Input 
+                              type="color"
+                              value={cell.color || "#ffffff"}
+                              onChange={(e) => updateCell(rIndex, cIndex, { color: e.target.value })}
+                              className="w-6 h-6 p-0 border-none bg-transparent"
+                            />
+                          </div>
+                          {cell.type === "variable" ? (
+                            <select 
+                              value={cell.value}
+                              onChange={(e) => updateCell(rIndex, cIndex, { value: e.target.value })}
+                              className="w-full h-7 text-xs rounded border"
+                            >
+                              <option value="">Select Field</option>
+                              {fields.map(f => (
+                                <option key={f.id} value={f.label}>{f.label}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <Input 
+                              value={cell.value}
+                              onChange={(e) => updateCell(rIndex, cIndex, { value: e.target.value })}
+                              placeholder="Text..."
+                              className="h-7 text-xs"
+                            />
+                          )}
+                        </div>
+                      </td>
                     ))}
-                  </select>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-red-500 hover:text-red-600"
-                  onClick={() => removeTableColumn(col.id)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
-            {tableConfig.length === 0 && (
-              <div className="text-center py-4 border-2 border-dashed rounded-lg text-slate-400 text-sm">
-                No custom columns defined. Default summary will be used.
-              </div>
-            )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+          {gridConfig.headers.length === 0 && (
+            <div className="text-center py-8 border-2 border-dashed rounded-lg text-slate-400 text-sm">
+              Add columns and rows to build your custom output table.
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -29,7 +29,9 @@ const formSchema = new mongoose.Schema({
   fields: mongoose.Schema.Types.Mixed,
   outputFormats: { type: Array, default: ["thank_you"] },
   tableConfig: { type: Array, default: [] },
+  gridConfig: mongoose.Schema.Types.Mixed,
   whatsappFormat: { type: String, default: "" },
+  allowEditing: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

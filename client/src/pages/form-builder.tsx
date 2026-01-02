@@ -10,9 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { Trash2, Plus, GripVertical, ChevronLeft, Save, X, Lock } from "lucide-react";
 import { Link, useLocation, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { useForms, FormField, FieldType, OutputFormat } from "@/lib/form-context";
+import { useForms, FormField, FieldType, OutputFormat, GridConfig, TableVariable } from "@/lib/form-context";
 import { useAuth } from "@/lib/auth-context";
-import { Badge } from "@/components/ui/badge";
 import OutputSettings from "@/components/output-settings";
 
 export default function FormBuilder() {
@@ -34,8 +33,9 @@ export default function FormBuilder() {
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [confirmationStyle, setConfirmationStyle] = useState<"table" | "paragraph">("table");
   const [confirmationText, setConfirmationText] = useState("");
-  const [tableConfig, setTableConfig] = useState<TableVariable[]>([]);
   const [whatsappFormat, setWhatsappFormat] = useState("");
+  const [gridConfig, setGridConfig] = useState<GridConfig>({ headers: [], rows: [] });
+  const [allowEditing, setAllowEditing] = useState(true);
 
   useEffect(() => {
     if (isEditing && formId) {
@@ -47,8 +47,9 @@ export default function FormBuilder() {
         setVisibility(existingForm.visibility || "public");
         setConfirmationStyle(existingForm.confirmationStyle || "table");
         setConfirmationText(existingForm.confirmationText || "");
-        setTableConfig(existingForm.tableConfig || []);
         setWhatsappFormat(existingForm.whatsappFormat || "");
+        setGridConfig(existingForm.gridConfig || { headers: [], rows: [] });
+        setAllowEditing(existingForm.allowEditing ?? true);
       }
     }
   }, [isEditing, formId, getForm]);
@@ -93,26 +94,15 @@ export default function FormBuilder() {
   const handleSave = async () => {
     try {
       if (isEditing && formId) {
-        await updateForm(formId, title, fields, outputFormats, visibility, confirmationStyle, confirmationText, tableConfig, whatsappFormat);
-        toast({
-          title: "Form Updated",
-          description: "Your changes have been saved.",
-        });
+        await updateForm(formId, title, fields, outputFormats, visibility, confirmationStyle, confirmationText, undefined, whatsappFormat, gridConfig, allowEditing);
+        toast({ title: "Form Updated", description: "Your changes have been saved." });
       } else {
-        await addForm(title, fields, outputFormats, visibility, confirmationStyle, confirmationText, tableConfig, whatsappFormat);
-        toast({
-          title: "Form Created",
-          description: "Your form has been created successfully.",
-        });
+        await addForm(title, fields, outputFormats, visibility, confirmationStyle, confirmationText, undefined, whatsappFormat, gridConfig, allowEditing);
+        toast({ title: "Form Created", description: "Your form has been created successfully." });
       }
-      
       setTimeout(() => setLocation("/forms"), 1000);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save form.",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Failed to save form.", variant: "destructive" });
     }
   };
 
@@ -135,7 +125,6 @@ export default function FormBuilder() {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto pb-20">
-        {/* Builder Header */}
         <div className="flex items-center justify-between mb-8 sticky top-0 bg-gray-50/95 backdrop-blur z-10 py-4 border-b -mx-4 px-4 md:mx-0 md:px-0 md:bg-transparent md:border-none md:py-0 md:static">
           <div className="flex items-center gap-4">
             <Link href="/forms">
@@ -158,33 +147,26 @@ export default function FormBuilder() {
           </div>
         </div>
 
-        {/* Form Settings */}
         <div className="mb-8 space-y-6">
           <div className="bg-white p-6 rounded-lg border border-slate-200">
-            <Label className="text-sm font-semibold mb-3 block">Form Visibility</Label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="visibility" 
-                  value="public" 
-                  checked={visibility === "public"}
-                  onChange={(e) => setVisibility(e.target.value as "public" | "private")}
-                  className="w-4 h-4"
-                />
-                <span className="text-sm">Public</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="visibility" 
-                  value="private" 
-                  checked={visibility === "private"}
-                  onChange={(e) => setVisibility(e.target.value as "public" | "private")}
-                  className="w-4 h-4"
-                />
-                <span className="text-sm">Private</span>
-              </label>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm font-semibold block">Form Settings</Label>
+                <p className="text-xs text-slate-500">Configure visibility and submission rules.</p>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <Switch checked={allowEditing} onCheckedChange={setAllowEditing} />
+                  <span className="text-sm font-medium">Allow Response Editing</span>
+                </div>
+                <Select value={visibility} onValueChange={(v: any) => setVisibility(v)}>
+                  <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="public">Public</SelectItem>
+                    <SelectItem value="private">Private</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -193,227 +175,70 @@ export default function FormBuilder() {
             <div className="space-y-4">
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="confirmationStyle" 
-                    value="table" 
-                    checked={confirmationStyle === "table"}
-                    onChange={(e) => setConfirmationStyle(e.target.value as "table" | "paragraph")}
-                    className="w-4 h-4"
-                  />
+                  <input type="radio" checked={confirmationStyle === "table"} onChange={() => setConfirmationStyle("table")} className="w-4 h-4" />
                   <span className="text-sm">Response Table</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="confirmationStyle" 
-                    value="paragraph" 
-                    checked={confirmationStyle === "paragraph"}
-                    onChange={(e) => setConfirmationStyle(e.target.value as "table" | "paragraph")}
-                    className="w-4 h-4"
-                  />
+                  <input type="radio" checked={confirmationStyle === "paragraph"} onChange={() => setConfirmationStyle("paragraph")} className="w-4 h-4" />
                   <span className="text-sm">Custom Paragraph</span>
                 </label>
               </div>
               {confirmationStyle === "paragraph" && (
                 <div className="space-y-2">
-                  <Label className="text-xs text-slate-500">Custom message to show after submission</Label>
-                  <Textarea 
-                    value={confirmationText}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConfirmationText(e.target.value)}
-                    placeholder="Enter your custom message here..."
-                    className="h-24"
-                  />
+                  <Label className="text-xs text-slate-500">Use {'{{Field Label}}'} to insert values.</Label>
+                  <Textarea value={confirmationText} onChange={(e) => setConfirmationText(e.target.value)} placeholder="Thank you {{Full Name}}!" className="h-24" />
                 </div>
               )}
             </div>
           </div>
 
-            <OutputSettings 
-              selectedFormats={outputFormats}
-              onChange={setOutputFormats}
-              fields={fields}
-              tableConfig={tableConfig}
-              onTableConfigChange={setTableConfig}
-              whatsappFormat={whatsappFormat}
-              onWhatsappFormatChange={setWhatsappFormat}
-            />
+          <OutputSettings 
+            selectedFormats={outputFormats}
+            onChange={setOutputFormats}
+            fields={fields}
+            gridConfig={gridConfig}
+            onGridConfigChange={setGridConfig}
+            whatsappFormat={whatsappFormat}
+            onWhatsappFormatChange={setWhatsappFormat}
+          />
         </div>
 
-        {/* Form Canvas */}
         <div className="space-y-6">
-          {fields.map((field, index) => (
-            <Card key={field.id} className="group relative border-slate-200 hover:border-primary/30 transition-colors overflow-visible">
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-transparent group-hover:bg-primary rounded-l-xl transition-colors" />
+          {fields.map((field) => (
+            <Card key={field.id} className="group relative border-slate-200 hover:border-primary/30">
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
-                  <div className="mt-2 text-slate-300 cursor-grab active:cursor-grabbing">
-                    <GripVertical className="w-5 h-5" />
-                  </div>
-                  
+                  <GripVertical className="w-5 h-5 mt-2 text-slate-300" />
                   <div className="flex-1 space-y-4">
-                    <div className="flex flex-col md:flex-row gap-4">
-                      <div className="flex-1">
-                        <Label className="text-xs text-slate-500 uppercase tracking-wider mb-1.5 block">Field Label</Label>
-                        <Input 
-                          value={field.label} 
-                          onChange={(e) => updateField(field.id, { label: e.target.value })}
-                          className="font-medium"
-                          data-testid={`input-label-${field.id}`}
-                        />
-                      </div>
-                      <div className="w-full md:w-[200px]">
-                        <Label className="text-xs text-slate-500 uppercase tracking-wider mb-1.5 block">Type</Label>
-                        <Select 
-                          value={field.type} 
-                          onValueChange={(value) => updateField(field.id, { type: value as FieldType })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="text">Text Input</SelectItem>
-                            <SelectItem value="number">Number</SelectItem>
-                            <SelectItem value="email">Email</SelectItem>
-                            <SelectItem value="textarea">Long Text</SelectItem>
-                            <SelectItem value="checkbox">Checkbox</SelectItem>
-                            <SelectItem value="select">Dropdown</SelectItem>
-                            <SelectItem value="radio">Radio Group</SelectItem>
-                            <SelectItem value="date">Date Picker</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="flex gap-4">
+                      <Input value={field.label} onChange={(e) => updateField(field.id, { label: e.target.value })} className="flex-1" />
+                      <Select value={field.type} onValueChange={(v: any) => updateField(field.id, { type: v })}>
+                        <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="text">Text</SelectItem>
+                          <SelectItem value="number">Number</SelectItem>
+                          <SelectItem value="email">Email</SelectItem>
+                          <SelectItem value="textarea">Long Text</SelectItem>
+                          <SelectItem value="select">Dropdown</SelectItem>
+                          <SelectItem value="radio">Radio</SelectItem>
+                          <SelectItem value="checkbox">Checkbox</SelectItem>
+                          <SelectItem value="date">Date</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-
-                    {/* Placeholder for text and email fields */}
-                    {(field.type === 'text' || field.type === 'email') && (
-                      <div>
-                        <Label className="text-xs text-slate-500 uppercase tracking-wider mb-1.5 block">Placeholder</Label>
-                        <Input 
-                          value={field.placeholder || ''} 
-                          onChange={(e) => updateField(field.id, { placeholder: e.target.value })}
-                          placeholder={field.type === 'email' ? 'email@example.com' : 'Enter placeholder text'}
-                          data-testid={`input-placeholder-${field.id}`}
-                        />
-                      </div>
-                    )}
-                    
-                    {/* Options Editor for Select/Radio only */}
-                    {(field.type === 'select' || field.type === 'radio') && (
-                      <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2">
-                        <Label className="text-xs text-slate-500 uppercase tracking-wider mb-2 block">Options</Label>
-                        <div className="space-y-2 mb-3">
-                          {field.options?.map((option, optIndex) => (
-                            <div key={optIndex} className="flex items-center gap-2">
-                              <div className="w-4 h-4 rounded-full border border-slate-300 bg-white" />
-                              <span className="text-sm flex-1">{option}</span>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-6 w-6 text-slate-400 hover:text-red-500"
-                                onClick={() => removeOption(field.id, optIndex)}
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="flex gap-2">
-                          <Input 
-                            placeholder="Add an option..." 
-                            className="h-8 text-sm bg-white" 
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                addOption(field.id, e.currentTarget.value);
-                                e.currentTarget.value = '';
-                              }
-                            }}
-                          />
-                          <Button 
-                            variant="secondary" 
-                            size="sm"
-                            className="h-8"
-                            onClick={(e) => {
-                              const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                              addOption(field.id, input.value);
-                              input.value = '';
-                            }}
-                          >
-                            Add
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Preview Area */}
-                    <div className="bg-slate-50 p-4 rounded-lg border border-dashed border-slate-200 mt-4">
-                      <Label className="mb-2 block text-sm text-slate-600">
-                        {field.label} 
-                        {field.required && <span className="text-red-500 ml-1">*</span>}
-                      </Label>
-                      
-                      {field.type === 'text' && <Input disabled placeholder={field.placeholder || "Short answer text"} />}
-                      {field.type === 'email' && <Input disabled placeholder="email@example.com" />}
-                      {field.type === 'number' && <Input disabled type="number" placeholder="0" />}
-                      {field.type === 'date' && <Input disabled type="date" />}
-                      {field.type === 'textarea' && <div className="h-20 w-full bg-white border rounded-md px-3 py-2 text-sm text-slate-400">Long answer text</div>}
-                      {field.type === 'checkbox' && (
-                        <div className="flex items-center space-x-2">
-                          <div className="w-4 h-4 border rounded bg-white" />
-                          <span className="text-sm text-slate-500">{field.label}</span>
-                        </div>
-                      )}
-                      {field.type === 'select' && (
-                        <div className="h-10 w-full bg-white border rounded-md px-3 flex items-center text-slate-400 justify-between">
-                          <span>Select an option</span>
-                          <ChevronLeft className="w-4 h-4 -rotate-90" />
-                        </div>
-                      )}
-                      {field.type === 'radio' && (
-                        <div className="space-y-2">
-                          {(field.options?.length ? field.options : ['Option 1', 'Option 2']).map((opt, i) => (
-                            <div key={i} className="flex items-center space-x-2 opacity-50">
-                              <div className="w-4 h-4 rounded-full border border-slate-400" />
-                              <span className="text-sm">{opt}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2">
+                    <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
-                        <Switch 
-                          checked={field.required} 
-                          onCheckedChange={(checked) => updateField(field.id, { required: checked })}
-                        />
-                        <Label className="text-sm text-slate-600">Required</Label>
+                        <Switch checked={field.required} onCheckedChange={(v) => updateField(field.id, { required: v })} />
+                        <span className="text-sm">Required</span>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                        onClick={() => removeField(field.id)}
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete Field
-                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => removeField(field.id)} className="text-red-500 ml-auto"><Trash2 className="w-4 h-4 mr-1" /> Remove</Button>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           ))}
-
-          <Button 
-            variant="outline" 
-            className="w-full py-8 border-dashed border-2 text-slate-500 hover:border-primary hover:text-primary hover:bg-primary/5"
-            onClick={addField}
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Add New Field
-          </Button>
+          <Button variant="outline" className="w-full py-8 border-dashed" onClick={addField}><Plus className="w-5 h-5 mr-2" /> Add New Field</Button>
         </div>
       </div>
     </Layout>
