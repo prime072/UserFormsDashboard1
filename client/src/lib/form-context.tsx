@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { formatDistanceToNow } from "date-fns";
 import * as XLSX from 'xlsx';
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle, AlignmentType } from 'docx';
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle, AlignmentType, TextRun } from 'docx';
 import jsPDF from 'jspdf';
 import { useAuth } from "./auth-context";
 
@@ -307,7 +307,7 @@ export async function generateDocx(formTitle: string, responseData: any, customT
   if (gridConfig && gridConfig.rows.length > 0) {
     const headerRow = new TableRow({
       children: gridConfig.headers.map(h => new TableCell({
-        children: [new Paragraph({ text: h, bold: true })],
+        children: [new Paragraph({ children: [new TextRun({ text: h, bold: true })] })],
         shading: { fill: "f1f5f9" }
       }))
     });
@@ -334,7 +334,7 @@ export async function generateDocx(formTitle: string, responseData: any, customT
       .filter(([key]) => key !== 'id' && key !== 'submittedAt')
       .map(([key, value]) => new TableRow({
         children: [
-          new TableCell({ children: [new Paragraph({ text: key, bold: true })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: key, bold: true })] })] }),
           new TableCell({ children: [new Paragraph(String(value || ""))] })
         ]
       }));

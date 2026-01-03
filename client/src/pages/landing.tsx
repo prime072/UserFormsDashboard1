@@ -16,7 +16,7 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-4">
             <Link href="/auth">
-              <a className="px-6 py-2 text-slate-700 hover:text-slate-900 font-medium transition-colors">Login</a>
+              <span className="px-6 py-2 text-slate-700 hover:text-slate-900 font-medium transition-colors cursor-pointer">Login</span>
             </Link>
             <Link href="/auth">
               <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800">
