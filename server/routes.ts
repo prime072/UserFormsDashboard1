@@ -77,7 +77,7 @@ export async function registerRoutes(
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const { visibility, confirmationStyle, confirmationText, ...bodyRest } = req.body;
+      const { visibility, confirmationStyle, confirmationText, gridConfig, whatsappFormat, allowEditing, ...bodyRest } = req.body;
       const validatedData = insertFormSchema.parse({
         ...bodyRest,
         userId,
@@ -87,6 +87,9 @@ export async function registerRoutes(
         visibility: visibility || "public",
         confirmationStyle: confirmationStyle || "table",
         confirmationText,
+        gridConfig,
+        whatsappFormat,
+        allowEditing: allowEditing ?? true,
       } as any;
       const form = await storage.createForm(formDataWithExtras);
       // Update user metrics
@@ -115,13 +118,16 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Forbidden" });
       }
       
-      const { visibility, confirmationStyle, confirmationText, ...bodyRest } = req.body;
+      const { visibility, confirmationStyle, confirmationText, gridConfig, whatsappFormat, allowEditing, ...bodyRest } = req.body;
       const validatedData = insertFormSchema.partial().parse(bodyRest);
       const updateDataWithExtras = {
         ...validatedData,
         ...(visibility !== undefined && { visibility }),
         ...(confirmationStyle !== undefined && { confirmationStyle }),
         ...(confirmationText !== undefined && { confirmationText }),
+        ...(gridConfig !== undefined && { gridConfig }),
+        ...(whatsappFormat !== undefined && { whatsappFormat }),
+        ...(allowEditing !== undefined && { allowEditing }),
       } as any;
       const updatedForm = await storage.updateForm(req.params.id, updateDataWithExtras);
       res.json(updatedForm);

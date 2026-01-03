@@ -83,9 +83,10 @@ export default function SubmissionConfirmation() {
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
+            {form.outputFormats?.includes("excel") && <Button variant="outline" onClick={() => generateExcel(form.title, data)}><Download className="w-4 h-4 mr-2" /> Excel</Button>}
             {form.outputFormats?.includes("pdf") && <Button variant="outline" onClick={() => generatePdf(form.title, data, undefined, form.gridConfig)}><File className="w-4 h-4 mr-2" /> PDF</Button>}
             {form.outputFormats?.includes("docx") && <Button variant="outline" onClick={() => generateDocx(form.title, data, undefined, form.gridConfig)}><FileJson className="w-4 h-4 mr-2" /> Word</Button>}
-            {form.outputFormats?.includes("whatsapp") && <Button variant="outline" className="text-green-600 border-green-200" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(generateWhatsAppShareMessage(form.title, data, window.location.href, form.whatsappFormat))}`)}><Share2 className="w-4 h-4 mr-2" /> WhatsApp</Button>}
+            {form.outputFormats?.includes("whatsapp") && <Button variant="outline" className="text-green-600 border-green-200" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(generateWhatsAppShareMessage(form.title, data, window.location.href, form.whatsappFormat, form.gridConfig))}`)}><Share2 className="w-4 h-4 mr-2" /> WhatsApp</Button>}
           </div>
           <Button className="w-full" onClick={() => setLocation("/")}>Back to Dashboard</Button>
         </CardContent>

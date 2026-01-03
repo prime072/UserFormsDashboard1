@@ -429,7 +429,7 @@ export function generatePdf(formTitle: string, responseData: any, customText?: s
   doc.save(`${formTitle}-response-${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
-export function generateWhatsAppShareMessage(formTitle: string, responseData: any, formUrl: string, customFormat?: string): string {
+export function generateWhatsAppShareMessage(formTitle: string, responseData: any, formUrl: string, customFormat?: string, gridConfig?: GridConfig): string {
   if (customFormat) {
     let message = customFormat;
     Object.entries(responseData).forEach(([key, value]) => {
@@ -439,9 +439,20 @@ export function generateWhatsAppShareMessage(formTitle: string, responseData: an
     message = message.replace(/{{form_title}}/g, formTitle);
     return message;
   }
-  const summary = Object.entries(responseData)
-    .filter(([key]) => key !== 'id' && key !== 'submittedAt')
-    .map(([key, value]) => `${key}: ${value}`)
-    .join('\n');
+
+  let summary = "";
+  if (gridConfig && gridConfig.rows.length > 0) {
+    summary = gridConfig.rows.map(row => {
+      return row.cells.map(cell => {
+        return cell.type === "variable" ? String(responseData[cell.value] || "") : cell.value;
+      }).join(" | ");
+    }).join("\n");
+  } else {
+    summary = Object.entries(responseData)
+      .filter(([key]) => key !== 'id' && key !== 'submittedAt')
+      .map(([key, value]) => `${key}: ${value}`)
+      .join('\n');
+  }
+  
   return `Form: ${formTitle}\n\n${summary}\n\nLink: ${formUrl}`;
 }
