@@ -1,6 +1,6 @@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { OutputFormat, FormField, GridConfig, TableRow, TableCell } from "@/lib/form-context";
+import { OutputFormat, FormField, GridConfig, FormTableRow, FormTableCell } from "@/lib/form-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,7 +43,7 @@ export default function OutputSettings({
   };
 
   const addRow = () => {
-    const newRow: TableRow = {
+    const newRow: FormTableRow = {
       id: Math.random().toString(36).substr(2, 9),
       cells: gridConfig.headers.map(() => ({
         id: Math.random().toString(36).substr(2, 9),
@@ -96,7 +96,7 @@ export default function OutputSettings({
     onGridConfigChange({ ...gridConfig, headers: newHeaders });
   };
 
-  const updateCell = (rowIndex: number, colIndex: number, updates: Partial<TableCell>) => {
+  const updateCell = (rowIndex: number, colIndex: number, updates: Partial<FormTableCell>) => {
     const newRows = [...gridConfig.rows];
     newRows[rowIndex].cells[colIndex] = { ...newRows[rowIndex].cells[colIndex], ...updates };
     onGridConfigChange({ ...gridConfig, rows: newRows });
@@ -180,8 +180,8 @@ export default function OutputSettings({
                         </Button>
                       </div>
                     </th>
-                  </tr>
-                ))}
+                  ))}
+                </tr>
               </thead>
               <tbody>
                 {gridConfig.rows.map((row, rIndex) => (

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { formatDistanceToNow } from "date-fns";
 import * as XLSX from 'xlsx';
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle, AlignmentType, ShadingType } from 'docx';
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle, AlignmentType } from 'docx';
 import jsPDF from 'jspdf';
 import { useAuth } from "./auth-context";
 
@@ -17,21 +17,21 @@ export interface FormField {
   options?: string[];
 }
 
-export interface TableCell {
+export interface FormTableCell {
   id: string;
   type: "text" | "variable";
   value: string;
   color?: string;
 }
 
-export interface TableRow {
+export interface FormTableRow {
   id: string;
-  cells: TableCell[];
+  cells: FormTableCell[];
 }
 
 export interface GridConfig {
   headers: string[];
-  rows: TableRow[];
+  rows: FormTableRow[];
 }
 
 export type TableVariable = any;
@@ -308,7 +308,7 @@ export async function generateDocx(formTitle: string, responseData: any, customT
     const headerRow = new TableRow({
       children: gridConfig.headers.map(h => new TableCell({
         children: [new Paragraph({ text: h, bold: true })],
-        shading: { fill: "f1f5f9", type: ShadingType.CLEAR }
+        shading: { fill: "f1f5f9" }
       }))
     });
 
@@ -320,7 +320,7 @@ export async function generateDocx(formTitle: string, responseData: any, customT
         }
         return new TableCell({
           children: [new Paragraph(value)],
-          shading: cell.color ? { fill: cell.color.replace("#", ""), type: ShadingType.CLEAR } : undefined
+          shading: cell.color ? { fill: cell.color.replace("#", "") } : undefined
         });
       })
     }));
