@@ -17,9 +17,9 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
 
-    // Admin credentials
-    const ADMIN_USERNAME = "prime";
-    const ADMIN_PASSWORD = "admin321";
+    // Admin credentials from environment variables
+    const ADMIN_USERNAME = import.meta.env.VITE_ADMIN_USERNAME;
+    const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 
     if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
       // Store admin session
