@@ -330,35 +330,6 @@ export async function generateDocx(formTitle: string, responseData: any, customT
       docRows.push(new Paragraph({ text: gridConfig.textAbove, spacing: { after: 200 } }));
     }
 
-    const headerRow = new TableRow({
-      children: gridConfig.headers.map(h => new TableCell({
-        children: [new Paragraph({ children: [new TextRun({ text: h, bold: true })] })],
-        shading: { fill: "f1f5f9" }
-      }))
-    });
-
-    const bodyRows = gridConfig.rows.map(row => new TableRow({
-      children: row.cells.map(cell => {
-        let value = cell.value;
-        if (cell.type === "variable") {
-          value = String(responseData[cell.value] || "");
-        }
-        return new TableCell({
-          children: [new Paragraph({
-            children: [new TextRun({ 
-              text: value,
-              bold: cell.bold,
-              italics: cell.italic,
-              size: (cell.fontSize || 12) * 2,
-              color: cell.textColor ? cell.textColor.replace("#", "") : undefined
-            })]
-          })],
-          shading: cell.color ? { fill: cell.color.replace("#", "") } : undefined,
-          columnSpan: cell.colspan || 1
-        });
-      })
-    }));
-
     const rows = [];
     if (gridConfig.tableName) {
       rows.push(new TableRow({
@@ -390,10 +361,6 @@ export async function generateDocx(formTitle: string, responseData: any, customT
       rows: [...rows, ...bodyRows],
       width: { size: 100, type: WidthType.PERCENTAGE }
     }));
-
-    if (gridConfig.textBelow) {
-      docRows.push(new Paragraph({ text: gridConfig.textBelow, spacing: { before: 200 } }));
-    }
   } else {
     const tableRows = Object.entries(responseData)
       .filter(([key]) => key !== 'id' && key !== 'submittedAt')
@@ -416,7 +383,6 @@ export async function generateDocx(formTitle: string, responseData: any, customT
         new Paragraph({ text: formTitle, heading: "Heading1", alignment: AlignmentType.CENTER }),
         new Paragraph({ text: `Generated: ${new Date().toLocaleString()}`, alignment: AlignmentType.CENTER }),
         new Paragraph(""),
-        ...(customText ? [new Paragraph(customText), new Paragraph("")] : []),
         ...docRows
       ]
     }]
@@ -440,21 +406,7 @@ export function generatePdf(formTitle: string, responseData: any, customText?: s
   
   let y = 40;
 
-  if (customText) {
-    doc.setFontSize(12);
-    const splitText = doc.splitTextToSize(customText, 170);
-    doc.text(splitText, 20, y);
-    y += splitText.length * 7 + 10;
-  }
-
   if (gridConfig && gridConfig.rows.length > 0) {
-    if (gridConfig.tableName) {
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text(gridConfig.tableName, 105, y, { align: "center" });
-      y += 10;
-    }
-
     if (gridConfig.textAbove) {
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");

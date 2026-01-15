@@ -186,20 +186,20 @@ export default function OutputSettings({
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-medium">Text Above Table</Label>
-              <Input 
+              <Textarea 
                 value={gridConfig.textAbove || ""} 
                 onChange={(e) => onGridConfigChange({ ...gridConfig, textAbove: e.target.value })}
                 placeholder="Write something above..."
-                className="h-8 text-sm"
+                className="text-sm min-h-[80px] resize-y"
               />
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-medium">Text Below Table</Label>
-              <Input 
+              <Textarea 
                 value={gridConfig.textBelow || ""} 
                 onChange={(e) => onGridConfigChange({ ...gridConfig, textBelow: e.target.value })}
                 placeholder="Write something below..."
-                className="h-8 text-sm"
+                className="text-sm min-h-[80px] resize-y"
               />
             </div>
             {gridConfig.showHeaders && (
