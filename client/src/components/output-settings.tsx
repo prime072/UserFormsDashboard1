@@ -1,6 +1,6 @@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { OutputFormat, FormField, GridConfig, FormTableRow, FormTableCell } from "@/lib/form-context";
+import { OutputFormat, FormField, GridConfig, FormTableRow, FormTableCell, useForms } from "@/lib/form-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

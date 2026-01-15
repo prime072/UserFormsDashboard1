@@ -143,6 +143,14 @@ type FormContextType = {
   updateResponse: (responseId: string, data: Record<string, any>) => void;
   deleteResponse: (responseId: string) => void;
   fetchFormResponses: (formId: string) => Promise<void>;
+  resolveLookup: (lookupConfig: {
+    formId: string;
+    fieldId: string;
+    lookupType: "first" | "last" | "nth" | "query";
+    nthIndex?: number;
+    queryField?: string;
+    queryValue?: string;
+  }) => Promise<string>;
 };
 
 const FormContext = createContext<FormContextType | null>(null);
@@ -303,78 +311,42 @@ export function FormProvider({ children }: { children: ReactNode }) {
     return forms.find((f) => f.id === id);
   };
 
-  const submitResponse = async (formId: string, data: any) => {
+  const resolveLookup = async (lookupConfig: {
+    formId: string;
+    fieldId: string;
+    lookupType: "first" | "last" | "nth" | "query";
+    nthIndex?: number;
+    queryField?: string;
+    queryValue?: string;
+  }) => {
     try {
-      const response = await fetch("/api/responses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ formId, data }),
+      const response = await fetch(`/api/forms/${lookupConfig.formId}/data`, {
+        headers: { "x-user-id": user?.id || "" },
       });
+      if (!response.ok) return "Lookup Error";
+      const data = await response.json();
+      if (!data || data.length === 0) return "No Data";
 
-      if (!response.ok) throw new Error("Failed to submit response");
-
-      const newResponse = await response.json();
-
-      const updatedForms = forms.map((f) =>
-        f.id === formId
-          ? {
-              ...f,
-              responses: f.responses + 1,
-              lastUpdated: new Date().toISOString(),
-            }
-          : f,
-      );
-      setForms(updatedForms);
-
-      const updatedResponses = [newResponse, ...responses];
-      setResponses(updatedResponses);
-
-      return { submissionId: newResponse.id };
-    } catch (error) {
-      console.error("Error submitting response:", error);
-      throw error;
-    }
-  };
-
-  const getFormResponses = (formId: string) => {
-    return responses.filter((r) => r.formId === formId);
-  };
-
-  const fetchFormResponses = async (formId: string) => {
-    if (!user?.id) return;
-    try {
-      const response = await fetch(`/api/forms/${formId}/responses`, {
-        headers: { "x-user-id": user.id },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setResponses(data);
+      let targetResponse;
+      if (lookupConfig.lookupType === "first") {
+        targetResponse = data[data.length - 1]; // Sorted by submittedAt desc in DB, so last in array is first submitted
+      } else if (lookupConfig.lookupType === "last") {
+        targetResponse = data[0]; // Sorted by submittedAt desc, so first in array is latest
+      } else if (lookupConfig.lookupType === "nth") {
+        const index = lookupConfig.nthIndex || 1;
+        targetResponse = data[data.length - index];
+      } else if (lookupConfig.lookupType === "query" && lookupConfig.queryField) {
+        targetResponse = data.find((r: any) => 
+          String(r.data[lookupConfig.queryField!] || "").toLowerCase() === 
+          String(lookupConfig.queryValue || "").toLowerCase()
+        );
       }
+
+      return targetResponse ? String(targetResponse.data[lookupConfig.fieldId] || "Not Found") : "Not Found";
     } catch (error) {
-      console.error("Error fetching form responses:", error);
+      console.error("Lookup resolution error:", error);
+      return "Error";
     }
-  };
-
-  const updateResponse = (responseId: string, data: Record<string, any>) => {
-    const updatedResponses = responses.map((r) =>
-      r.id === responseId ? { ...r, data } : r,
-    );
-    setResponses(updatedResponses);
-  };
-
-  const deleteResponse = (responseId: string) => {
-    const response = responses.find((r) => r.id === responseId);
-    if (!response) return;
-
-    const updatedResponses = responses.filter((r) => r.id !== responseId);
-    setResponses(updatedResponses);
-
-    const updatedForms = forms.map((f) =>
-      f.id === response.formId
-        ? { ...f, responses: Math.max(0, f.responses - 1) }
-        : f,
-    );
-    setForms(updatedForms);
   };
 
   return (
@@ -391,6 +363,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
         updateResponse,
         deleteResponse,
         fetchFormResponses,
+        resolveLookup,
       }}
     >
       {children}
