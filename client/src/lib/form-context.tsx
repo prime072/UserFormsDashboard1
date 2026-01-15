@@ -1,11 +1,36 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import { formatDistanceToNow } from "date-fns";
-import * as XLSX from 'xlsx';
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle, AlignmentType, TextRun } from 'docx';
-import jsPDF from 'jspdf';
+import * as XLSX from "xlsx";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  WidthType,
+  BorderStyle,
+  AlignmentType,
+  TextRun,
+} from "docx";
+import jsPDF from "jspdf";
 import { useAuth } from "./auth-context";
 
-export type FieldType = "text" | "number" | "email" | "textarea" | "checkbox" | "select" | "radio" | "date";
+export type FieldType =
+  | "text"
+  | "number"
+  | "email"
+  | "textarea"
+  | "checkbox"
+  | "select"
+  | "radio"
+  | "date";
 export type OutputFormat = "thank_you" | "whatsapp" | "excel" | "docx" | "pdf";
 
 export interface FormField {
@@ -75,11 +100,37 @@ export interface FormResponse {
 type FormContextType = {
   forms: Form[];
   responses: FormResponse[];
-  addForm: (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle?: "table" | "paragraph", confirmationText?: string, tableConfig?: any[], whatsappFormat?: string, gridConfig?: GridConfig, allowEditing?: boolean) => Promise<void>;
-  updateForm: (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle?: "table" | "paragraph", confirmationText?: string, tableConfig?: any[], whatsappFormat?: string, gridConfig?: GridConfig, allowEditing?: boolean) => Promise<void>;
+  addForm: (
+    title: string,
+    fields: FormField[],
+    outputFormats?: OutputFormat[],
+    visibility?: "public" | "private",
+    confirmationStyle?: "table" | "paragraph",
+    confirmationText?: string,
+    tableConfig?: any[],
+    whatsappFormat?: string,
+    gridConfig?: GridConfig,
+    allowEditing?: boolean,
+  ) => Promise<void>;
+  updateForm: (
+    id: string,
+    title: string,
+    fields: FormField[],
+    outputFormats?: OutputFormat[],
+    visibility?: "public" | "private",
+    confirmationStyle?: "table" | "paragraph",
+    confirmationText?: string,
+    tableConfig?: any[],
+    whatsappFormat?: string,
+    gridConfig?: GridConfig,
+    allowEditing?: boolean,
+  ) => Promise<void>;
   deleteForm: (id: string) => Promise<void>;
   getForm: (id: string) => Form | undefined;
-  submitResponse: (formId: string, data: any) => Promise<{ submissionId: string }>;
+  submitResponse: (
+    formId: string,
+    data: any,
+  ) => Promise<{ submissionId: string }>;
   getFormResponses: (formId: string) => FormResponse[];
   updateResponse: (responseId: string, data: Record<string, any>) => void;
   deleteResponse: (responseId: string) => void;
@@ -134,7 +185,18 @@ export function FormProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addForm = async (title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle: "table" | "paragraph" = "table", confirmationText?: string, tableConfig?: any[], whatsappFormat?: string, gridConfig?: GridConfig, allowEditing: boolean = true) => {
+  const addForm = async (
+    title: string,
+    fields: FormField[],
+    outputFormats?: OutputFormat[],
+    visibility?: "public" | "private",
+    confirmationStyle: "table" | "paragraph" = "table",
+    confirmationText?: string,
+    tableConfig?: any[],
+    whatsappFormat?: string,
+    gridConfig?: GridConfig,
+    allowEditing: boolean = true,
+  ) => {
     if (!user?.id) return;
     try {
       const response = await fetch("/api/forms", {
@@ -165,7 +227,19 @@ export function FormProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateForm = async (id: string, title: string, fields: FormField[], outputFormats?: OutputFormat[], visibility?: "public" | "private", confirmationStyle: "table" | "paragraph" = "table", confirmationText?: string, tableConfig?: any[], whatsappFormat?: string, gridConfig?: GridConfig, allowEditing: boolean = true) => {
+  const updateForm = async (
+    id: string,
+    title: string,
+    fields: FormField[],
+    outputFormats?: OutputFormat[],
+    visibility?: "public" | "private",
+    confirmationStyle: "table" | "paragraph" = "table",
+    confirmationText?: string,
+    tableConfig?: any[],
+    whatsappFormat?: string,
+    gridConfig?: GridConfig,
+    allowEditing: boolean = true,
+  ) => {
     if (!user?.id) return;
     try {
       const response = await fetch(`/api/forms/${id}`, {
@@ -189,7 +263,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
       });
       if (response.ok) {
         const updatedForm = await response.json();
-        setForms(forms.map(f => f.id === id ? updatedForm : f));
+        setForms(forms.map((f) => (f.id === id ? updatedForm : f)));
       }
     } catch (error) {
       console.error("Error updating form:", error);
@@ -206,10 +280,10 @@ export function FormProvider({ children }: { children: ReactNode }) {
         },
       });
       if (response.ok) {
-        const updatedForms = forms.filter(f => f.id !== id);
+        const updatedForms = forms.filter((f) => f.id !== id);
         setForms(updatedForms);
-        
-        const updatedResponses = responses.filter(r => r.formId !== id);
+
+        const updatedResponses = responses.filter((r) => r.formId !== id);
         setResponses(updatedResponses);
       }
     } catch (error) {
@@ -218,7 +292,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
   };
 
   const getForm = (id: string) => {
-    return forms.find(f => f.id === id);
+    return forms.find((f) => f.id === id);
   };
 
   const submitResponse = async (formId: string, data: any) => {
@@ -228,21 +302,25 @@ export function FormProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ formId, data }),
       });
-      
+
       if (!response.ok) throw new Error("Failed to submit response");
-      
+
       const newResponse = await response.json();
-      
-      const updatedForms = forms.map(f => 
-        f.id === formId 
-          ? { ...f, responses: f.responses + 1, lastUpdated: new Date().toISOString() }
-          : f
+
+      const updatedForms = forms.map((f) =>
+        f.id === formId
+          ? {
+              ...f,
+              responses: f.responses + 1,
+              lastUpdated: new Date().toISOString(),
+            }
+          : f,
       );
       setForms(updatedForms);
-      
+
       const updatedResponses = [newResponse, ...responses];
       setResponses(updatedResponses);
-      
+
       return { submissionId: newResponse.id };
     } catch (error) {
       console.error("Error submitting response:", error);
@@ -251,7 +329,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
   };
 
   const getFormResponses = (formId: string) => {
-    return responses.filter(r => r.formId === formId);
+    return responses.filter((r) => r.formId === formId);
   };
 
   const fetchFormResponses = async (formId: string) => {
@@ -270,31 +348,43 @@ export function FormProvider({ children }: { children: ReactNode }) {
   };
 
   const updateResponse = (responseId: string, data: Record<string, any>) => {
-    const updatedResponses = responses.map(r =>
-      r.id === responseId 
-        ? { ...r, data }
-        : r
+    const updatedResponses = responses.map((r) =>
+      r.id === responseId ? { ...r, data } : r,
     );
     setResponses(updatedResponses);
   };
 
   const deleteResponse = (responseId: string) => {
-    const response = responses.find(r => r.id === responseId);
+    const response = responses.find((r) => r.id === responseId);
     if (!response) return;
 
-    const updatedResponses = responses.filter(r => r.id !== responseId);
+    const updatedResponses = responses.filter((r) => r.id !== responseId);
     setResponses(updatedResponses);
 
-    const updatedForms = forms.map(f =>
+    const updatedForms = forms.map((f) =>
       f.id === response.formId
         ? { ...f, responses: Math.max(0, f.responses - 1) }
-        : f
+        : f,
     );
     setForms(updatedForms);
   };
 
   return (
-    <FormContext.Provider value={{ forms, responses, addForm, updateForm, deleteForm, getForm, submitResponse, getFormResponses, updateResponse, deleteResponse, fetchFormResponses }}>
+    <FormContext.Provider
+      value={{
+        forms,
+        responses,
+        addForm,
+        updateForm,
+        deleteForm,
+        getForm,
+        submitResponse,
+        getFormResponses,
+        updateResponse,
+        deleteResponse,
+        fetchFormResponses,
+      }}
+    >
       {children}
     </FormContext.Provider>
   );
@@ -309,101 +399,193 @@ export function useForms() {
 export async function generateExcel(formTitle: string, responseData: any) {
   const worksheet = XLSX.utils.json_to_sheet([responseData]);
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Response');
-  const filename = `${formTitle}-response-${new Date().toISOString().split('T')[0]}.xlsx`;
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Response");
+  const filename = `${formTitle}-response-${new Date().toISOString().split("T")[0]}.xlsx`;
   XLSX.writeFile(workbook, filename);
 }
 
-export async function generateDocx(formTitle: string, responseData: any, customText?: string, gridConfig?: GridConfig) {
+export async function generateDocx(
+  formTitle: string,
+  responseData: any,
+  customText?: string,
+  gridConfig?: GridConfig,
+) {
   const docRows = [];
 
   if (gridConfig && gridConfig.rows.length > 0) {
-    if (gridConfig.tableName) {
-      docRows.push(new Paragraph({
-        children: [new TextRun({ text: gridConfig.tableName, bold: true, size: 28 })],
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 200 }
-      }));
-    }
-
     if (gridConfig.textAbove) {
-      docRows.push(new Paragraph({ text: gridConfig.textAbove, spacing: { after: 200 } }));
+      docRows.push(
+        new Paragraph({ text: gridConfig.textAbove, spacing: { after: 200 } }),
+      );
     }
-
+    const bodyRows = gridConfig.rows.map(
+      (row) =>
+        new TableRow({
+          children: row.cells.map((cell) => {
+            let value = cell.value;
+            if (cell.type === "variable") {
+              value = String(responseData[cell.value] || "");
+            }
+            return new TableCell({
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: value,
+                      bold: cell.bold,
+                      italics: cell.italic,
+                      size: (cell.fontSize || 12) * 2,
+                      color: cell.textColor
+                        ? cell.textColor.replace("#", "")
+                        : undefined,
+                    }),
+                  ],
+                }),
+              ],
+              shading: cell.color
+                ? { fill: cell.color.replace("#", "") }
+                : undefined,
+              columnSpan: cell.colspan || 1,
+            });
+          }),
+        }),
+    );
     const rows = [];
     if (gridConfig.tableName) {
-      rows.push(new TableRow({
-        children: [new TableCell({
-          children: [new Paragraph({
-            children: [new TextRun({ text: gridConfig.tableName, bold: true, size: 28 })],
-            alignment: AlignmentType.CENTER
-          })],
-          columnSpan: gridConfig.headers.length,
-          shading: { fill: "e2e8f0" }
-        })]
-      }));
+      rows.push(
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: gridConfig.tableName,
+                      bold: true,
+                      size: 28,
+                    }),
+                  ],
+                  alignment: AlignmentType.CENTER,
+                }),
+              ],
+              columnSpan: gridConfig.headers.length,
+              shading: { fill: "e2e8f0" },
+            }),
+          ],
+        }),
+      );
     }
 
     if (gridConfig.showHeaders !== false) {
-      rows.push(new TableRow({
-        children: gridConfig.headers.map(h => new TableCell({
-          children: [new Paragraph({ children: [new TextRun({ 
-            text: h, 
-            bold: true,
-            color: gridConfig.headerTextColor ? gridConfig.headerTextColor.replace("#", "") : undefined
-          })] })],
-          shading: { fill: gridConfig.headerColor ? gridConfig.headerColor.replace("#", "") : "f1f5f9" }
-        }))
-      }));
+      rows.push(
+        new TableRow({
+          children: gridConfig.headers.map(
+            (h) =>
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: h,
+                        bold: true,
+                        color: gridConfig.headerTextColor
+                          ? gridConfig.headerTextColor.replace("#", "")
+                          : undefined,
+                      }),
+                    ],
+                  }),
+                ],
+                shading: {
+                  fill: gridConfig.headerColor
+                    ? gridConfig.headerColor.replace("#", "")
+                    : "f1f5f9",
+                },
+              }),
+          ),
+        }),
+      );
     }
 
-    docRows.push(new Table({
-      rows: [...rows, ...bodyRows],
-      width: { size: 100, type: WidthType.PERCENTAGE }
-    }));
+    docRows.push(
+      new Table({
+        rows: [...rows, ...bodyRows],
+        width: { size: 100, type: WidthType.PERCENTAGE },
+      }),
+    );
+
+    if (gridConfig.textBelow) {
+      docRows.push(
+        new Paragraph({ text: gridConfig.textBelow, spacing: { before: 200 } }),
+      );
+    }
   } else {
     const tableRows = Object.entries(responseData)
-      .filter(([key]) => key !== 'id' && key !== 'submittedAt')
-      .map(([key, value]) => new TableRow({
-        children: [
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: key, bold: true })] })] }),
-          new TableCell({ children: [new Paragraph(String(value || ""))] })
-        ]
-      }));
+      .filter(([key]) => key !== "id" && key !== "submittedAt")
+      .map(
+        ([key, value]) =>
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    children: [new TextRun({ text: key, bold: true })],
+                  }),
+                ],
+              }),
+              new TableCell({ children: [new Paragraph(String(value || ""))] }),
+            ],
+          }),
+      );
 
-    docRows.push(new Table({
-      rows: tableRows,
-      width: { size: 100, type: WidthType.PERCENTAGE }
-    }));
+    docRows.push(
+      new Table({
+        rows: tableRows,
+        width: { size: 100, type: WidthType.PERCENTAGE },
+      }),
+    );
   }
 
   const doc = new Document({
-    sections: [{
-      children: [
-        new Paragraph({ text: formTitle, heading: "Heading1", alignment: AlignmentType.CENTER }),
-        new Paragraph({ text: `Generated: ${new Date().toLocaleString()}`, alignment: AlignmentType.CENTER }),
-        new Paragraph(""),
-        ...docRows
-      ]
-    }]
+    sections: [
+      {
+        children: [
+          new Paragraph({
+            text: formTitle,
+            heading: "Heading1",
+            alignment: AlignmentType.CENTER,
+          }),
+          new Paragraph({
+            text: `Generated: ${new Date().toLocaleString()}`,
+            alignment: AlignmentType.CENTER,
+          }),
+          new Paragraph(""),
+          ...docRows,
+        ],
+      },
+    ],
   });
 
   const buffer = await Packer.toBlob(doc);
   const url = URL.createObjectURL(buffer);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
-  a.download = `${formTitle}-response-${new Date().toISOString().split('T')[0]}.docx`;
+  a.download = `${formTitle}-response-${new Date().toISOString().split("T")[0]}.docx`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
-export function generatePdf(formTitle: string, responseData: any, customText?: string, gridConfig?: GridConfig) {
+export function generatePdf(
+  formTitle: string,
+  responseData: any,
+  customText?: string,
+  gridConfig?: GridConfig,
+) {
   const doc = new jsPDF();
   doc.setFontSize(20);
   doc.text(formTitle, 20, 20);
   doc.setFontSize(10);
   doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 30);
-  
+
   let y = 40;
 
   if (gridConfig && gridConfig.rows.length > 0) {
@@ -416,12 +598,12 @@ export function generatePdf(formTitle: string, responseData: any, customText?: s
     }
 
     const colWidth = 170 / gridConfig.headers.length;
-    
+
     if (gridConfig.tableName) {
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
       doc.setFillColor(226, 232, 240);
-      doc.rect(20, y, 170, 10, 'F');
+      doc.rect(20, y, 170, 10, "F");
       doc.text(gridConfig.tableName, 105, y + 7, { align: "center" });
       y += 10;
     }
@@ -429,45 +611,57 @@ export function generatePdf(formTitle: string, responseData: any, customText?: s
     if (gridConfig.showHeaders !== false) {
       doc.setFontSize(10);
       doc.setFillColor(gridConfig.headerColor || "#f1f5f9");
-      doc.rect(20, y, 170, 10, 'F');
+      doc.rect(20, y, 170, 10, "F");
       doc.setTextColor(gridConfig.headerTextColor || "#000000");
       gridConfig.headers.forEach((h, i) => {
         doc.setFont("helvetica", "bold");
-        doc.text(h, 22 + (i * colWidth), y + 7);
+        doc.text(h, 22 + i * colWidth, y + 7);
       });
       y += 10;
     }
     doc.setTextColor("#000000");
 
-    gridConfig.rows.forEach(row => {
+    gridConfig.rows.forEach((row) => {
       let maxHeight = 10;
       row.cells.forEach((cell, i) => {
-        let val = cell.type === "variable" ? String(responseData[cell.value] || "") : cell.value;
-        const split = doc.splitTextToSize(val, (colWidth * (cell.colspan || 1)) - 4);
+        let val =
+          cell.type === "variable"
+            ? String(responseData[cell.value] || "")
+            : cell.value;
+        const split = doc.splitTextToSize(
+          val,
+          colWidth * (cell.colspan || 1) - 4,
+        );
         maxHeight = Math.max(maxHeight, split.length * 5 + 5);
       });
 
-      if (y + maxHeight > 280) { doc.addPage(); y = 20; }
+      if (y + maxHeight > 280) {
+        doc.addPage();
+        y = 20;
+      }
 
       let currentX = 20;
       row.cells.forEach((cell, i) => {
         const cellWidth = colWidth * (cell.colspan || 1);
         if (cell.color) {
           doc.setFillColor(cell.color);
-          doc.rect(currentX, y, cellWidth, maxHeight, 'F');
+          doc.rect(currentX, y, cellWidth, maxHeight, "F");
         }
         doc.setTextColor(cell.textColor || "#000000");
         doc.setFontSize(cell.fontSize || 10);
-        
+
         let style = "normal";
         if (cell.bold && cell.italic) style = "bolditalic";
         else if (cell.bold) style = "bold";
         else if (cell.italic) style = "italic";
         else if (row.isFooter) style = "bold";
-        
+
         doc.setFont("helvetica", style);
-        
-        let val = cell.type === "variable" ? String(responseData[cell.value] || "") : cell.value;
+
+        let val =
+          cell.type === "variable"
+            ? String(responseData[cell.value] || "")
+            : cell.value;
         doc.text(doc.splitTextToSize(val, cellWidth - 4), currentX + 2, y + 7);
         currentX += cellWidth;
       });
@@ -483,9 +677,12 @@ export function generatePdf(formTitle: string, responseData: any, customText?: s
     }
   } else {
     Object.entries(responseData)
-      .filter(([key]) => key !== 'id' && key !== 'submittedAt')
+      .filter(([key]) => key !== "id" && key !== "submittedAt")
       .forEach(([key, value]) => {
-        if (y > 270) { doc.addPage(); y = 20; }
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
         doc.setFontSize(11);
         doc.text(`${key}:`, 20, y);
         doc.setFontSize(10);
@@ -495,14 +692,22 @@ export function generatePdf(formTitle: string, responseData: any, customText?: s
       });
   }
 
-  doc.save(`${formTitle}-response-${new Date().toISOString().split('T')[0]}.pdf`);
+  doc.save(
+    `${formTitle}-response-${new Date().toISOString().split("T")[0]}.pdf`,
+  );
 }
 
-export function generateWhatsAppShareMessage(formTitle: string, responseData: any, formUrl: string, customFormat?: string, gridConfig?: GridConfig): string {
+export function generateWhatsAppShareMessage(
+  formTitle: string,
+  responseData: any,
+  formUrl: string,
+  customFormat?: string,
+  gridConfig?: GridConfig,
+): string {
   if (customFormat) {
     let message = customFormat;
     Object.entries(responseData).forEach(([key, value]) => {
-      message = message.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
+      message = message.replace(new RegExp(`{{${key}}}`, "g"), String(value));
     });
     message = message.replace(/{{form_url}}/g, formUrl);
     message = message.replace(/{{form_title}}/g, formTitle);
@@ -511,17 +716,23 @@ export function generateWhatsAppShareMessage(formTitle: string, responseData: an
 
   let summary = "";
   if (gridConfig && gridConfig.rows.length > 0) {
-    summary = gridConfig.rows.map(row => {
-      return row.cells.map(cell => {
-        return cell.type === "variable" ? String(responseData[cell.value] || "") : cell.value;
-      }).join(" | ");
-    }).join("\n");
+    summary = gridConfig.rows
+      .map((row) => {
+        return row.cells
+          .map((cell) => {
+            return cell.type === "variable"
+              ? String(responseData[cell.value] || "")
+              : cell.value;
+          })
+          .join(" : ");
+      })
+      .join("\n");
   } else {
     summary = Object.entries(responseData)
-      .filter(([key]) => key !== 'id' && key !== 'submittedAt')
+      .filter(([key]) => key !== "id" && key !== "submittedAt")
       .map(([key, value]) => `${key}: ${value}`)
-      .join('\n');
+      .join("\n");
   }
-  
-  return `Form: ${formTitle}\n\n${summary}\n\nLink: ${formUrl}`;
+
+  return `Form: ${formTitle}\n\n${summary}`;
 }
