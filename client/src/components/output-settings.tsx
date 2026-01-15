@@ -283,11 +283,12 @@ export default function OutputSettings({
                           <div className="flex gap-1 items-center">
                             <select 
                               value={cell.type}
-                              onChange={(e) => updateCell(rIndex, cIndex, { type: e.target.value as "text" | "variable" })}
+                              onChange={(e) => updateCell(rIndex, cIndex, { type: e.target.value as "text" | "variable" | "lookup" })}
                               className="h-6 text-[10px] rounded border"
                             >
                               <option value="text">Txt</option>
                               <option value="variable">Var</option>
+                              <option value="lookup">Lkp</option>
                             </select>
                             <Input 
                               type="color"
@@ -348,6 +349,98 @@ export default function OutputSettings({
                                 <option key={f.id} value={f.label}>{f.label}</option>
                               ))}
                             </select>
+                          ) : cell.type === "lookup" ? (
+                            <div className="space-y-1">
+                              <select 
+                                value={cell.lookupConfig?.formId || ""}
+                                onChange={(e) => updateCell(rIndex, cIndex, { 
+                                  lookupConfig: { 
+                                    ...(cell.lookupConfig || { fieldId: "", lookupType: "last" }), 
+                                    formId: e.target.value 
+                                  } 
+                                })}
+                                className="w-full h-7 text-xs rounded border"
+                              >
+                                <option value="">Select Form</option>
+                                {useForms().forms.map(f => (
+                                  <option key={f.id} value={f.id}>{f.title}</option>
+                                ))}
+                              </select>
+                              {cell.lookupConfig?.formId && (
+                                <>
+                                  <select 
+                                    value={cell.lookupConfig?.fieldId || ""}
+                                    onChange={(e) => updateCell(rIndex, cIndex, { 
+                                      lookupConfig: { 
+                                        ...cell.lookupConfig!, 
+                                        fieldId: e.target.value 
+                                      } 
+                                    })}
+                                    className="w-full h-7 text-xs rounded border"
+                                  >
+                                    <option value="">Select Field</option>
+                                    {useForms().getForm(cell.lookupConfig.formId)?.fields.map(f => (
+                                      <option key={f.id} value={f.label}>{f.label}</option>
+                                    ))}
+                                  </select>
+                                  <select 
+                                    value={cell.lookupConfig?.lookupType || "last"}
+                                    onChange={(e) => updateCell(rIndex, cIndex, { 
+                                      lookupConfig: { 
+                                        ...cell.lookupConfig!, 
+                                        lookupType: e.target.value as any 
+                                      } 
+                                    })}
+                                    className="w-full h-7 text-xs rounded border"
+                                  >
+                                    <option value="first">First Row</option>
+                                    <option value="last">Last Row</option>
+                                    <option value="nth">Nth Row</option>
+                                    <option value="query">Query Filter</option>
+                                  </select>
+                                  {cell.lookupConfig?.lookupType === "nth" && (
+                                    <Input 
+                                      type="number"
+                                      placeholder="Index"
+                                      value={cell.lookupConfig?.nthIndex || ""}
+                                      onChange={(e) => updateCell(rIndex, cIndex, { 
+                                        lookupConfig: { 
+                                          ...cell.lookupConfig!, 
+                                          nthIndex: parseInt(e.target.value) 
+                                        } 
+                                      })}
+                                      className="h-7 text-xs"
+                                    />
+                                  )}
+                                  {cell.lookupConfig?.lookupType === "query" && (
+                                    <div className="flex gap-1">
+                                      <Input 
+                                        placeholder="Filter Field"
+                                        value={cell.lookupConfig?.queryField || ""}
+                                        onChange={(e) => updateCell(rIndex, cIndex, { 
+                                          lookupConfig: { 
+                                            ...cell.lookupConfig!, 
+                                            queryField: e.target.value 
+                                          } 
+                                        })}
+                                        className="h-7 text-xs flex-1"
+                                      />
+                                      <Input 
+                                        placeholder="Value"
+                                        value={cell.lookupConfig?.queryValue || ""}
+                                        onChange={(e) => updateCell(rIndex, cIndex, { 
+                                          lookupConfig: { 
+                                            ...cell.lookupConfig!, 
+                                            queryValue: e.target.value 
+                                          } 
+                                        })}
+                                        className="h-7 text-xs flex-1"
+                                      />
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           ) : (
                             <Input 
                               value={cell.value}

@@ -73,6 +73,20 @@ export async function registerRoutes(
 
   app.get("/api/forms/:id/data", isAuthenticated, async (req, res) => {
     try {
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const form = await storage.getForm(req.params.id);
+      if (!form) {
+        return res.status(404).json({ message: "Form not found" });
+      }
+      
+      // In a real app, we might want to check if the user has permission to see this data
+      // For lookups, we'll allow it if they are authenticated for now, 
+      // but ideally we check if they own the form or if it's shared.
+      
       const responses = await storage.getResponsesByFormId(req.params.id);
       res.json(responses);
     } catch (error) {

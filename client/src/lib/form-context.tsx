@@ -48,9 +48,11 @@ export interface FormTableCell {
   value: string;
   lookupConfig?: {
     formId: string;
-    columnName: string;
-    rowReference: "first" | "last" | "nth";
-    rowNth?: number;
+    fieldId: string;
+    lookupType: "first" | "last" | "nth" | "query";
+    nthIndex?: number;
+    queryField?: string;
+    queryValue?: string;
   };
   color?: string;
   textColor?: string;
