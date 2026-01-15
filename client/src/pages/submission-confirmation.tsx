@@ -29,6 +29,9 @@ export default function SubmissionConfirmation() {
     if (formId && submissionId) fetchData();
   }, [formId, submissionId]);
 
+  const data = response.data;
+  const grid = form.gridConfig;
+
   const [resolvedLookups, setResolvedLookups] = useState<Record<string, string>>({});
   const { resolveLookup } = useForms();
 
@@ -48,12 +51,6 @@ export default function SubmissionConfirmation() {
     };
     if (grid) fetchLookups();
   }, [grid, resolveLookup]);
-
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  if (!form || !response) return <div className="min-h-screen flex items-center justify-center">Not Found</div>;
-
-  const data = response.data;
-  const grid = form.gridConfig;
 
   const replaceVars = (text: string) => {
     let result = text || "";
