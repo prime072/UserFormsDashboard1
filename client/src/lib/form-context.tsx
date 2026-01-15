@@ -311,6 +311,80 @@ export function FormProvider({ children }: { children: ReactNode }) {
     return forms.find((f) => f.id === id);
   };
 
+  const submitResponse = async (formId: string, data: any) => {
+    try {
+      const response = await fetch("/api/responses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formId, data }),
+      });
+
+      if (!response.ok) throw new Error("Failed to submit response");
+
+      const newResponse = await response.json();
+
+      const updatedForms = forms.map((f) =>
+        f.id === formId
+          ? {
+              ...f,
+              responses: f.responses + 1,
+              lastUpdated: new Date().toISOString(),
+            }
+          : f,
+      );
+      setForms(updatedForms);
+
+      const updatedResponses = [newResponse, ...responses];
+      setResponses(updatedResponses);
+
+      return { submissionId: newResponse.id };
+    } catch (error) {
+      console.error("Error submitting response:", error);
+      throw error;
+    }
+  };
+
+  const getFormResponses = (formId: string) => {
+    return responses.filter((r) => r.formId === formId);
+  };
+
+  const fetchFormResponses = async (formId: string) => {
+    if (!user?.id) return;
+    try {
+      const response = await fetch(`/api/forms/${formId}/responses`, {
+        headers: { "x-user-id": user.id },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setResponses(data);
+      }
+    } catch (error) {
+      console.error("Error fetching form responses:", error);
+    }
+  };
+
+  const updateResponse = (responseId: string, data: Record<string, any>) => {
+    const updatedResponses = responses.map((r) =>
+      r.id === responseId ? { ...r, data } : r,
+    );
+    setResponses(updatedResponses);
+  };
+
+  const deleteResponse = (responseId: string) => {
+    const response = responses.find((r) => r.id === responseId);
+    if (!response) return;
+
+    const updatedResponses = responses.filter((r) => r.id !== responseId);
+    setResponses(updatedResponses);
+
+    const updatedForms = forms.map((f) =>
+      f.id === response.formId
+        ? { ...f, responses: Math.max(0, f.responses - 1) }
+        : f,
+    );
+    setForms(updatedForms);
+  };
+
   const resolveLookup = async (lookupConfig: {
     formId: string;
     fieldId: string;
@@ -390,6 +464,7 @@ export async function generateDocx(
   responseData: any,
   customText?: string,
   gridConfig?: GridConfig,
+  resolveLookup?: (config: any) => Promise<string>,
 ) {
   const docRows = [];
 
@@ -399,13 +474,15 @@ export async function generateDocx(
         new Paragraph({ text: gridConfig.textAbove, spacing: { after: 200 } }),
       );
     }
-    const bodyRows = gridConfig.rows.map(
-      (row) =>
+    const bodyRows = await Promise.all(gridConfig.rows.map(
+      async (row) =>
         new TableRow({
-          children: row.cells.map((cell) => {
+          children: await Promise.all(row.cells.map(async (cell) => {
             let value = cell.value;
             if (cell.type === "variable") {
               value = String(responseData[cell.value] || "");
+            } else if (cell.type === "lookup" && cell.lookupConfig && resolveLookup) {
+              value = await resolveLookup(cell.lookupConfig);
             }
             return new TableCell({
               children: [
@@ -428,9 +505,9 @@ export async function generateDocx(
                 : undefined,
               columnSpan: cell.colspan || 1,
             });
-          }),
+          })),
         }),
-    );
+    ));
     const rows = [];
     if (gridConfig.tableName) {
       rows.push(
@@ -555,11 +632,12 @@ export async function generateDocx(
   URL.revokeObjectURL(url);
 }
 
-export function generatePdf(
+export async function generatePdf(
   formTitle: string,
   responseData: any,
   customText?: string,
   gridConfig?: GridConfig,
+  resolveLookup?: (config: any) => Promise<string>,
 ) {
   const doc = new jsPDF();
   doc.setFontSize(20);
@@ -602,13 +680,20 @@ export function generatePdf(
     }
     doc.setTextColor("#000000");
 
-    gridConfig.rows.forEach((row) => {
+    for (const row of gridConfig.rows) {
       let maxHeight = 10;
-      row.cells.forEach((cell, i) => {
-        let val =
-          cell.type === "variable"
-            ? String(responseData[cell.value] || "")
-            : cell.value;
+      const cellValues = await Promise.all(row.cells.map(async (cell) => {
+        let val = cell.value;
+        if (cell.type === "variable") {
+          val = String(responseData[cell.value] || "");
+        } else if (cell.type === "lookup" && cell.lookupConfig && resolveLookup) {
+          val = await resolveLookup(cell.lookupConfig);
+        }
+        return val;
+      }));
+
+      cellValues.forEach((val, i) => {
+        const cell = row.cells[i];
         const split = doc.splitTextToSize(
           val,
           colWidth * (cell.colspan || 1) - 4,
@@ -639,16 +724,13 @@ export function generatePdf(
 
         doc.setFont("helvetica", style);
 
-        let val =
-          cell.type === "variable"
-            ? String(responseData[cell.value] || "")
-            : cell.value;
+        const val = cellValues[i];
         doc.text(doc.splitTextToSize(val, cellWidth - 4), currentX + 2, y + 7);
         currentX += cellWidth;
       });
       doc.setTextColor("#000000");
       y += maxHeight;
-    });
+    }
 
     if (gridConfig.textBelow) {
       doc.setFontSize(10);
@@ -678,13 +760,14 @@ export function generatePdf(
   );
 }
 
-export function generateWhatsAppShareMessage(
+export async function generateWhatsAppShareMessage(
   formTitle: string,
   responseData: any,
   formUrl: string,
   customFormat?: string,
   gridConfig?: GridConfig,
-): string {
+  resolveLookup?: (config: any) => Promise<string>,
+): Promise<string> {
   if (customFormat) {
     let message = customFormat;
     Object.entries(responseData).forEach(([key, value]) => {
@@ -697,17 +780,18 @@ export function generateWhatsAppShareMessage(
 
   let summary = "";
   if (gridConfig && gridConfig.rows.length > 0) {
-    summary = gridConfig.rows
-      .map((row) => {
-        return row.cells
-          .map((cell) => {
-            return cell.type === "variable"
-              ? String(responseData[cell.value] || "")
-              : cell.value;
-          })
-          .join(" : ");
-      })
-      .join("\n");
+    const rowStrings = await Promise.all(gridConfig.rows.map(async (row) => {
+      const cellStrings = await Promise.all(row.cells.map(async (cell) => {
+        if (cell.type === "variable") {
+          return String(responseData[cell.value] || "");
+        } else if (cell.type === "lookup" && cell.lookupConfig && resolveLookup) {
+          return await resolveLookup(cell.lookupConfig);
+        }
+        return cell.value;
+      }));
+      return cellStrings.join(" : ");
+    }));
+    summary = rowStrings.join("\n");
   } else {
     summary = Object.entries(responseData)
       .filter(([key]) => key !== "id" && key !== "submittedAt")

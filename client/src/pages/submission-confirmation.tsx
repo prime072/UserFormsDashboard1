@@ -2,7 +2,7 @@ import { useRoute, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, ArrowLeft, Share2, Download, FileJson, File } from "lucide-react";
-import { generateExcel, generateDocx, generatePdf, generateWhatsAppShareMessage } from "@/lib/form-context";
+import { generateExcel, generateDocx, generatePdf, generateWhatsAppShareMessage, useForms } from "@/lib/form-context";
 import { useState, useEffect } from "react";
 
 export default function SubmissionConfirmation() {
@@ -28,6 +28,26 @@ export default function SubmissionConfirmation() {
     };
     if (formId && submissionId) fetchData();
   }, [formId, submissionId]);
+
+  const [resolvedLookups, setResolvedLookups] = useState<Record<string, string>>({});
+  const { resolveLookup } = useForms();
+
+  useEffect(() => {
+    const fetchLookups = async () => {
+      if (!grid) return;
+      const lookups: Record<string, string> = {};
+      for (const row of grid.rows) {
+        for (const cell of row.cells) {
+          if (cell.type === "lookup" && cell.lookupConfig) {
+            const val = await resolveLookup(cell.lookupConfig);
+            lookups[cell.id] = val;
+          }
+        }
+      }
+      setResolvedLookups(lookups);
+    };
+    if (grid) fetchLookups();
+  }, [grid, resolveLookup]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (!form || !response) return <div className="min-h-screen flex items-center justify-center">Not Found</div>;
@@ -91,7 +111,12 @@ export default function SubmissionConfirmation() {
                       {grid.rows.map((row: any) => (
                         <tr key={row.id} className={row.isFooter ? "bg-slate-50 font-semibold" : ""}>
                           {row.cells.map((cell: any) => {
-                            const val = cell.type === "variable" ? String(data[cell.value] || "") : cell.value;
+                            let val = cell.value;
+                            if (cell.type === "variable") {
+                              val = String(data[cell.value] || "");
+                            } else if (cell.type === "lookup") {
+                              val = resolvedLookups[cell.id] || "Loading...";
+                            }
                             return (
                               <td 
                                 key={cell.id} 
@@ -126,9 +151,12 @@ export default function SubmissionConfirmation() {
           )}
           <div className="grid grid-cols-2 gap-3">
             {form.outputFormats?.includes("excel") && <Button variant="outline" onClick={() => generateExcel(form.title, data)}><Download className="w-4 h-4 mr-2" /> Excel</Button>}
-            {form.outputFormats?.includes("pdf") && <Button variant="outline" onClick={() => generatePdf(form.title, data, undefined, form.gridConfig)}><File className="w-4 h-4 mr-2" /> PDF</Button>}
-            {form.outputFormats?.includes("docx") && <Button variant="outline" onClick={() => generateDocx(form.title, data, undefined, form.gridConfig)}><FileJson className="w-4 h-4 mr-2" /> Word</Button>}
-            {form.outputFormats?.includes("whatsapp") && <Button variant="outline" className="text-green-600 border-green-200" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(generateWhatsAppShareMessage(form.title, data, window.location.href, form.whatsappFormat, form.gridConfig))}`)}><Share2 className="w-4 h-4 mr-2" /> WhatsApp</Button>}
+            {form.outputFormats?.includes("pdf") && <Button variant="outline" onClick={() => generatePdf(form.title, data, undefined, form.gridConfig, resolveLookup)}><File className="w-4 h-4 mr-2" /> PDF</Button>}
+            {form.outputFormats?.includes("docx") && <Button variant="outline" onClick={() => generateDocx(form.title, data, undefined, form.gridConfig, resolveLookup)}><FileJson className="w-4 h-4 mr-2" /> Word</Button>}
+            {form.outputFormats?.includes("whatsapp") && <Button variant="outline" className="text-green-600 border-green-200" onClick={async () => {
+              const msg = await generateWhatsAppShareMessage(form.title, data, window.location.href, form.whatsappFormat, form.gridConfig, resolveLookup);
+              window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+            }}><Share2 className="w-4 h-4 mr-2" /> WhatsApp</Button>}
           </div>
           <Button className="w-full" onClick={() => setLocation("/")}>Back to Dashboard</Button>
         </CardContent>
