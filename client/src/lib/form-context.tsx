@@ -44,8 +44,14 @@ export interface FormField {
 
 export interface FormTableCell {
   id: string;
-  type: "text" | "variable";
+  type: "text" | "variable" | "lookup";
   value: string;
+  lookupConfig?: {
+    formId: string;
+    columnName: string;
+    rowReference: "first" | "last" | "nth";
+    rowNth?: number;
+  };
   color?: string;
   textColor?: string;
   fontSize?: number;
