@@ -393,16 +393,16 @@ export default function OutputSettings({
                                     })}
                                     className="w-full h-7 text-xs rounded border"
                                   >
-                                    <option value="first">First Row</option>
-                                    <option value="last">Last Row</option>
-                                    <option value="nth">Nth Row</option>
+                                    <option value="first">First (+offset)</option>
+                                    <option value="last">Last (-offset)</option>
+                                    <option value="nth">Absolute Nth</option>
                                     <option value="query">Query Filter</option>
                                   </select>
-                                  {cell.lookupConfig?.lookupType === "nth" && (
+                                  {(cell.lookupConfig?.lookupType === "nth" || cell.lookupConfig?.lookupType === "first" || cell.lookupConfig?.lookupType === "last") && (
                                     <Input 
                                       type="number"
-                                      placeholder="Index"
-                                      value={cell.lookupConfig?.nthIndex || ""}
+                                      placeholder={cell.lookupConfig?.lookupType === "nth" ? "Index" : "Offset (0, 1, ...)"}
+                                      value={cell.lookupConfig?.nthIndex || (cell.lookupConfig?.lookupType === "nth" ? "" : "0")}
                                       onChange={(e) => updateCell(rIndex, cIndex, { 
                                         lookupConfig: { 
                                           ...cell.lookupConfig!, 

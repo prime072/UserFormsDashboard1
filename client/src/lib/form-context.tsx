@@ -403,9 +403,16 @@ export function FormProvider({ children }: { children: ReactNode }) {
 
       let targetResponse;
       if (lookupConfig.lookupType === "first") {
-        targetResponse = data[data.length - 1]; // Sorted by submittedAt desc in DB, so last in array is first submitted
+        const offset = lookupConfig.nthIndex || 0;
+        // data is desc (newest first), so first submitted is at end
+        // first(0) -> data[length-1]
+        // first(1) -> data[length-2]
+        targetResponse = data[data.length - 1 - offset];
       } else if (lookupConfig.lookupType === "last") {
-        targetResponse = data[0]; // Sorted by submittedAt desc, so first in array is latest
+        const offset = lookupConfig.nthIndex || 0;
+        // last(0) -> data[0]
+        // last(1) -> data[1]
+        targetResponse = data[offset];
       } else if (lookupConfig.lookupType === "nth") {
         const index = lookupConfig.nthIndex || 1;
         targetResponse = data[data.length - index];
