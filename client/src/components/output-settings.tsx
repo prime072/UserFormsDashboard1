@@ -148,6 +148,9 @@ export default function OutputSettings({
           <div className="flex items-center justify-between">
             <Label className="text-sm font-semibold">Custom Grid Layout (PDF/Word/Confirmation)</Label>
             <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => onGridConfigChange({ ...gridConfig, rows: [...gridConfig.rows, { id: Math.random().toString(36).substr(2, 9), cells: gridConfig.headers.map(() => ({ id: Math.random().toString(36).substr(2, 9), type: "text", value: "", color: "#ffffff" })), isFooter: true }] })}>
+                <Plus className="w-4 h-4 mr-1" /> Footer
+              </Button>
               <Button variant="outline" size="sm" onClick={addColumn}>
                 <Plus className="w-4 h-4 mr-1" /> Col
               </Button>
@@ -156,10 +159,47 @@ export default function OutputSettings({
               </Button>
             </div>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Table Name</Label>
+              <Input 
+                value={gridConfig.tableName || ""} 
+                onChange={(e) => onGridConfigChange({ ...gridConfig, tableName: e.target.value })}
+                placeholder="Enter table name..."
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Text Above Table</Label>
+              <Input 
+                value={gridConfig.textAbove || ""} 
+                onChange={(e) => onGridConfigChange({ ...gridConfig, textAbove: e.target.value })}
+                placeholder="Write something above..."
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Text Below Table</Label>
+              <Input 
+                value={gridConfig.textBelow || ""} 
+                onChange={(e) => onGridConfigChange({ ...gridConfig, textBelow: e.target.value })}
+                placeholder="Write something below..."
+                className="h-8 text-sm"
+              />
+            </div>
+          </div>
           
           <div className="overflow-x-auto border rounded-lg">
             <table className="w-full border-collapse">
               <thead>
+                {gridConfig.tableName && (
+                  <tr className="bg-slate-100">
+                    <th colSpan={gridConfig.headers.length + 1} className="p-2 border-b text-center font-bold text-sm">
+                      {gridConfig.tableName}
+                    </th>
+                  </tr>
+                )}
                 <tr className="bg-slate-50">
                   <th className="w-10 border-b"></th>
                   {gridConfig.headers.map((header, i) => (
@@ -185,7 +225,7 @@ export default function OutputSettings({
               </thead>
               <tbody>
                 {gridConfig.rows.map((row, rIndex) => (
-                  <tr key={row.id}>
+                  <tr key={row.id} className={row.isFooter ? "bg-slate-100 font-semibold" : ""}>
                     <td className="p-2 border-b border-r bg-slate-50 text-center">
                       <Button 
                         variant="ghost" 
@@ -200,10 +240,11 @@ export default function OutputSettings({
                       <td 
                         key={cell.id} 
                         className="p-2 border-b border-r"
+                        colSpan={cell.colspan || 1}
                         style={{ backgroundColor: cell.color }}
                       >
                         <div className="space-y-1">
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 items-center">
                             <select 
                               value={cell.type}
                               onChange={(e) => updateCell(rIndex, cIndex, { type: e.target.value as "text" | "variable" })}
@@ -216,8 +257,19 @@ export default function OutputSettings({
                               type="color"
                               value={cell.color || "#ffffff"}
                               onChange={(e) => updateCell(rIndex, cIndex, { color: e.target.value })}
-                              className="w-6 h-6 p-0 border-none bg-transparent"
+                              className="w-5 h-5 p-0 border-none bg-transparent"
                             />
+                            <div className="flex items-center gap-1 border rounded px-1 h-6">
+                              <span className="text-[9px] text-slate-400">Merge</span>
+                              <input 
+                                type="number" 
+                                min="1" 
+                                max={gridConfig.headers.length - cIndex}
+                                value={cell.colspan || 1}
+                                onChange={(e) => updateCell(rIndex, cIndex, { colspan: parseInt(e.target.value) || 1 })}
+                                className="w-6 h-4 text-[10px] bg-transparent outline-none"
+                              />
+                            </div>
                           </div>
                           {cell.type === "variable" ? (
                             <select 
@@ -234,7 +286,7 @@ export default function OutputSettings({
                             <Input 
                               value={cell.value}
                               onChange={(e) => updateCell(rIndex, cIndex, { value: e.target.value })}
-                              placeholder="Text..."
+                              placeholder={row.isFooter ? "Footer text..." : "Text..."}
                               className="h-7 text-xs"
                             />
                           )}

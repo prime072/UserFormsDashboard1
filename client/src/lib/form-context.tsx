@@ -22,14 +22,19 @@ export interface FormTableCell {
   type: "text" | "variable";
   value: string;
   color?: string;
+  colspan?: number;
 }
 
 export interface FormTableRow {
   id: string;
   cells: FormTableCell[];
+  isFooter?: boolean;
 }
 
 export interface GridConfig {
+  tableName?: string;
+  textAbove?: string;
+  textBelow?: string;
   headers: string[];
   rows: FormTableRow[];
 }
