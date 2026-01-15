@@ -61,6 +61,7 @@ export default function OutputSettings({
   const addColumn = () => {
     const newHeader = `Column ${gridConfig.headers.length + 1}`;
     onGridConfigChange({
+      ...gridConfig,
       headers: [...gridConfig.headers, newHeader],
       rows: gridConfig.rows.map(row => ({
         ...row,
@@ -82,6 +83,7 @@ export default function OutputSettings({
 
   const removeColumn = (index: number) => {
     onGridConfigChange({
+      ...gridConfig,
       headers: gridConfig.headers.filter((_, i) => i !== index),
       rows: gridConfig.rows.map(row => ({
         ...row,
@@ -148,7 +150,7 @@ export default function OutputSettings({
           <div className="flex items-center justify-between">
             <Label className="text-sm font-semibold">Custom Grid Layout (PDF/Word/Confirmation)</Label>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => onGridConfigChange({ ...gridConfig, rows: [...gridConfig.rows, { id: Math.random().toString(36).substr(2, 9), cells: gridConfig.headers.map(() => ({ id: Math.random().toString(36).substr(2, 9), type: "text", value: "", color: "#ffffff" })), isFooter: true }] })}>
+              <Button variant="outline" size="sm" onClick={() => onGridConfigChange({ ...gridConfig, rows: [...gridConfig.rows, { id: Math.random().toString(36).substr(2, 9), cells: gridConfig.headers.map(() => ({ id: Math.random().toString(36).substr(2, 9), type: "text", value: "", color: "#ffffff", colspan: 1 })), isFooter: true }] })}>
                 <Plus className="w-4 h-4 mr-1" /> Footer
               </Button>
               <Button variant="outline" size="sm" onClick={addColumn}>

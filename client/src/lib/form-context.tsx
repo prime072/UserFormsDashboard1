@@ -310,6 +310,18 @@ export async function generateDocx(formTitle: string, responseData: any, customT
   const docRows = [];
 
   if (gridConfig && gridConfig.rows.length > 0) {
+    if (gridConfig.tableName) {
+      docRows.push(new Paragraph({
+        children: [new TextRun({ text: gridConfig.tableName, bold: true, size: 28 })],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 }
+      }));
+    }
+
+    if (gridConfig.textAbove) {
+      docRows.push(new Paragraph({ text: gridConfig.textAbove, spacing: { after: 200 } }));
+    }
+
     const headerRow = new TableRow({
       children: gridConfig.headers.map(h => new TableCell({
         children: [new Paragraph({ children: [new TextRun({ text: h, bold: true })] })],
@@ -325,7 +337,8 @@ export async function generateDocx(formTitle: string, responseData: any, customT
         }
         return new TableCell({
           children: [new Paragraph(value)],
-          shading: cell.color ? { fill: cell.color.replace("#", "") } : undefined
+          shading: cell.color ? { fill: cell.color.replace("#", "") } : undefined,
+          columnSpan: cell.colspan || 1
         });
       })
     }));
@@ -334,6 +347,10 @@ export async function generateDocx(formTitle: string, responseData: any, customT
       rows: [headerRow, ...bodyRows],
       width: { size: 100, type: WidthType.PERCENTAGE }
     }));
+
+    if (gridConfig.textBelow) {
+      docRows.push(new Paragraph({ text: gridConfig.textBelow, spacing: { before: 200 } }));
+    }
   } else {
     const tableRows = Object.entries(responseData)
       .filter(([key]) => key !== 'id' && key !== 'submittedAt')
@@ -388,11 +405,27 @@ export function generatePdf(formTitle: string, responseData: any, customText?: s
   }
 
   if (gridConfig && gridConfig.rows.length > 0) {
+    if (gridConfig.tableName) {
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(gridConfig.tableName, 105, y, { align: "center" });
+      y += 10;
+    }
+
+    if (gridConfig.textAbove) {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      const splitTextAbove = doc.splitTextToSize(gridConfig.textAbove, 170);
+      doc.text(splitTextAbove, 20, y);
+      y += splitTextAbove.length * 5 + 5;
+    }
+
     const colWidth = 170 / gridConfig.headers.length;
     doc.setFontSize(10);
     doc.setFillColor(241, 245, 249);
     doc.rect(20, y, 170, 10, 'F');
     gridConfig.headers.forEach((h, i) => {
+      doc.setFont("helvetica", "bold");
       doc.text(h, 22 + (i * colWidth), y + 7);
     });
     y += 10;
@@ -401,22 +434,37 @@ export function generatePdf(formTitle: string, responseData: any, customText?: s
       let maxHeight = 10;
       row.cells.forEach((cell, i) => {
         let val = cell.type === "variable" ? String(responseData[cell.value] || "") : cell.value;
-        const split = doc.splitTextToSize(val, colWidth - 4);
+        const split = doc.splitTextToSize(val, (colWidth * (cell.colspan || 1)) - 4);
         maxHeight = Math.max(maxHeight, split.length * 5 + 5);
       });
 
       if (y + maxHeight > 280) { doc.addPage(); y = 20; }
 
+      let currentX = 20;
       row.cells.forEach((cell, i) => {
+        const cellWidth = colWidth * (cell.colspan || 1);
         if (cell.color) {
           doc.setFillColor(cell.color);
-          doc.rect(20 + (i * colWidth), y, colWidth, maxHeight, 'F');
+          doc.rect(currentX, y, cellWidth, maxHeight, 'F');
+        }
+        if (row.isFooter) {
+          doc.setFont("helvetica", "bold");
+        } else {
+          doc.setFont("helvetica", "normal");
         }
         let val = cell.type === "variable" ? String(responseData[cell.value] || "") : cell.value;
-        doc.text(doc.splitTextToSize(val, colWidth - 4), 22 + (i * colWidth), y + 7);
+        doc.text(doc.splitTextToSize(val, cellWidth - 4), currentX + 2, y + 7);
+        currentX += cellWidth;
       });
       y += maxHeight;
     });
+
+    if (gridConfig.textBelow) {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      const splitTextBelow = doc.splitTextToSize(gridConfig.textBelow, 170);
+      doc.text(splitTextBelow, 20, y + 5);
+    }
   } else {
     Object.entries(responseData)
       .filter(([key]) => key !== 'id' && key !== 'submittedAt')
