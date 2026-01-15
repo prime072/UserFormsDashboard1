@@ -55,30 +55,53 @@ export default function SubmissionConfirmation() {
           {form.confirmationStyle === "paragraph" ? (
             <div className="bg-white p-6 rounded-lg border leading-relaxed whitespace-pre-wrap">{replaceVars(form.confirmationText)}</div>
           ) : (
-            <div className="overflow-x-auto border rounded-lg bg-white">
-              {grid && grid.headers?.length > 0 ? (
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50">
-                      {grid.headers.map((h: any, i: number) => <th key={i} className="p-3 border-b border-r text-left text-sm font-bold text-slate-700">{h}</th>)}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {grid.rows.map((row: any) => (
-                      <tr key={row.id}>
-                        {row.cells.map((cell: any) => (
-                          <td key={cell.id} className="p-3 border-b border-r text-sm" style={{ backgroundColor: cell.color }}>
-                            {cell.type === "variable" ? String(data[cell.value] || "") : cell.value}
-                          </td>
-                        ))}
+            <div className="space-y-4">
+              {grid?.textAbove && (
+                <p className="text-slate-600 whitespace-pre-wrap">{replaceVars(grid.textAbove)}</p>
+              )}
+              <div className="overflow-x-auto border rounded-lg bg-white">
+                {grid && grid.headers?.length > 0 ? (
+                  <table className="w-full border-collapse">
+                    <thead>
+                      {grid.tableName && (
+                        <tr className="bg-slate-100">
+                          <th 
+                            colSpan={grid.headers.length} 
+                            className="p-4 border-b text-center font-bold text-lg text-slate-900"
+                          >
+                            {replaceVars(grid.tableName)}
+                          </th>
+                        </tr>
+                      )}
+                      <tr className="bg-slate-50">
+                        {grid.headers.map((h: any, i: number) => <th key={i} className="p-3 border-b border-r text-left text-sm font-bold text-slate-700">{h}</th>)}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="p-6 space-y-2">
-                  {Object.entries(data).map(([key, val]) => <div key={key} className="flex justify-between border-b pb-2"><span className="font-medium">{key}:</span><span>{String(val)}</span></div>)}
-                </div>
+                    </thead>
+                    <tbody>
+                      {grid.rows.map((row: any) => (
+                        <tr key={row.id} className={row.isFooter ? "bg-slate-50 font-semibold" : ""}>
+                          {row.cells.map((cell: any) => (
+                            <td 
+                              key={cell.id} 
+                              className="p-3 border-b border-r text-sm" 
+                              colSpan={cell.colspan || 1}
+                              style={{ backgroundColor: cell.color }}
+                            >
+                              {cell.type === "variable" ? String(data[cell.value] || "") : cell.value}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="p-6 space-y-2">
+                    {Object.entries(data).map(([key, val]) => <div key={key} className="flex justify-between border-b pb-2"><span className="font-medium">{key}:</span><span>{String(val)}</span></div>)}
+                  </div>
+                )}
+              </div>
+              {grid?.textBelow && (
+                <p className="text-slate-600 whitespace-pre-wrap">{replaceVars(grid.textBelow)}</p>
               )}
             </div>
           )}

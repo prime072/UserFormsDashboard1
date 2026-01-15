@@ -268,7 +268,12 @@ export default function OutputSettings({
                                 min="1" 
                                 max={gridConfig.headers.length - cIndex}
                                 value={cell.colspan || 1}
-                                onChange={(e) => updateCell(rIndex, cIndex, { colspan: parseInt(e.target.value) || 1 })}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value);
+                                  if (!isNaN(val)) {
+                                    updateCell(rIndex, cIndex, { colspan: val });
+                                  }
+                                }}
                                 className="w-6 h-4 text-[10px] bg-transparent outline-none"
                               />
                             </div>
