@@ -98,6 +98,10 @@ export default function OutputSettings({
     onGridConfigChange({ ...gridConfig, headers: newHeaders });
   };
 
+  const toggleHeaders = () => {
+    onGridConfigChange({ ...gridConfig, showHeaders: !gridConfig.showHeaders });
+  };
+
   const updateCell = (rowIndex: number, colIndex: number, updates: Partial<FormTableCell>) => {
     const newRows = [...gridConfig.rows];
     newRows[rowIndex].cells[colIndex] = { ...newRows[rowIndex].cells[colIndex], ...updates };
@@ -150,6 +154,14 @@ export default function OutputSettings({
           <div className="flex items-center justify-between">
             <Label className="text-sm font-semibold">Custom Grid Layout (PDF/Word/Confirmation)</Label>
             <div className="flex gap-2">
+              <Button 
+                variant={gridConfig.showHeaders ? "default" : "outline"} 
+                size="sm" 
+                onClick={toggleHeaders}
+                className="h-8"
+              >
+                Headers: {gridConfig.showHeaders ? "On" : "Off"}
+              </Button>
               <Button variant="outline" size="sm" onClick={() => onGridConfigChange({ ...gridConfig, rows: [...gridConfig.rows, { id: Math.random().toString(36).substr(2, 9), cells: gridConfig.headers.map(() => ({ id: Math.random().toString(36).substr(2, 9), type: "text", value: "", color: "#ffffff", colspan: 1 })), isFooter: true }] })}>
                 <Plus className="w-4 h-4 mr-1" /> Footer
               </Button>
@@ -190,6 +202,28 @@ export default function OutputSettings({
                 className="h-8 text-sm"
               />
             </div>
+            {gridConfig.showHeaders && (
+              <div className="flex gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-medium">Hdr BG</Label>
+                  <Input 
+                    type="color"
+                    value={gridConfig.headerColor || "#f1f5f9"}
+                    onChange={(e) => onGridConfigChange({ ...gridConfig, headerColor: e.target.value })}
+                    className="w-8 h-8 p-0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-medium">Hdr Text</Label>
+                  <Input 
+                    type="color"
+                    value={gridConfig.headerTextColor || "#000000"}
+                    onChange={(e) => onGridConfigChange({ ...gridConfig, headerTextColor: e.target.value })}
+                    className="w-8 h-8 p-0"
+                  />
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="overflow-x-auto border rounded-lg">
@@ -260,7 +294,32 @@ export default function OutputSettings({
                               value={cell.color || "#ffffff"}
                               onChange={(e) => updateCell(rIndex, cIndex, { color: e.target.value })}
                               className="w-5 h-5 p-0 border-none bg-transparent"
+                              title="BG Color"
                             />
+                            <Input 
+                              type="color"
+                              value={cell.textColor || "#000000"}
+                              onChange={(e) => updateCell(rIndex, cIndex, { textColor: e.target.value })}
+                              className="w-5 h-5 p-0 border-none bg-transparent"
+                              title="Text Color"
+                            />
+                            <div className="flex items-center gap-1 border rounded px-1 h-6">
+                              <button 
+                                className={`text-[10px] px-1 font-bold ${cell.bold ? 'bg-primary text-white' : ''}`}
+                                onClick={() => updateCell(rIndex, cIndex, { bold: !cell.bold })}
+                              >B</button>
+                              <button 
+                                className={`text-[10px] px-1 italic ${cell.italic ? 'bg-primary text-white' : ''}`}
+                                onClick={() => updateCell(rIndex, cIndex, { italic: !cell.italic })}
+                              >I</button>
+                              <select 
+                                value={cell.fontSize || 12}
+                                onChange={(e) => updateCell(rIndex, cIndex, { fontSize: parseInt(e.target.value) })}
+                                className="h-4 text-[9px] bg-transparent outline-none border-l pl-1"
+                              >
+                                {[8,10,12,14,16,18,20].map(s => <option key={s} value={s}>{s}</option>)}
+                              </select>
+                            </div>
                             <div className="flex items-center gap-1 border rounded px-1 h-6">
                               <span className="text-[9px] text-slate-400">Merge</span>
                               <input 

@@ -73,23 +73,42 @@ export default function SubmissionConfirmation() {
                           </th>
                         </tr>
                       )}
-                      <tr className="bg-slate-50">
-                        {grid.headers.map((h: any, i: number) => <th key={i} className="p-3 border-b border-r text-left text-sm font-bold text-slate-700">{h}</th>)}
-                      </tr>
+                      {grid.showHeaders !== false && (
+                        <tr style={{ backgroundColor: grid.headerColor || "#f8fafc" }}>
+                          {grid.headers.map((h: any, i: number) => (
+                            <th 
+                              key={i} 
+                              className="p-3 border-b border-r text-left text-sm font-bold last:border-r-0"
+                              style={{ color: grid.headerTextColor || "#334155" }}
+                            >
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      )}
                     </thead>
                     <tbody>
                       {grid.rows.map((row: any) => (
                         <tr key={row.id} className={row.isFooter ? "bg-slate-50 font-semibold" : ""}>
-                          {row.cells.map((cell: any) => (
-                            <td 
-                              key={cell.id} 
-                              className="p-3 border-b border-r text-sm" 
-                              colSpan={cell.colspan || 1}
-                              style={{ backgroundColor: cell.color }}
-                            >
-                              {cell.type === "variable" ? String(data[cell.value] || "") : cell.value}
-                            </td>
-                          ))}
+                          {row.cells.map((cell: any) => {
+                            const val = cell.type === "variable" ? String(data[cell.value] || "") : cell.value;
+                            return (
+                              <td 
+                                key={cell.id} 
+                                className="p-3 border-b border-r text-sm last:border-r-0"
+                                colSpan={cell.colspan || 1}
+                                style={{ 
+                                  backgroundColor: cell.color,
+                                  color: cell.textColor || "#475569",
+                                  fontSize: `${cell.fontSize || 14}px`,
+                                  fontWeight: cell.bold ? 'bold' : (row.isFooter ? 'semibold' : 'normal'),
+                                  fontStyle: cell.italic ? 'italic' : 'normal'
+                                }}
+                              >
+                                {val}
+                              </td>
+                            );
+                          })}
                         </tr>
                       ))}
                     </tbody>

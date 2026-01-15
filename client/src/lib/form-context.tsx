@@ -22,6 +22,11 @@ export interface FormTableCell {
   type: "text" | "variable";
   value: string;
   color?: string;
+  textColor?: string;
+  fontSize?: number;
+  fontStyle?: string;
+  bold?: boolean;
+  italic?: boolean;
   colspan?: number;
 }
 
@@ -36,6 +41,9 @@ export interface GridConfig {
   textAbove?: string;
   textBelow?: string;
   headers: string[];
+  showHeaders?: boolean;
+  headerColor?: string;
+  headerTextColor?: string;
   rows: FormTableRow[];
 }
 
@@ -336,15 +344,50 @@ export async function generateDocx(formTitle: string, responseData: any, customT
           value = String(responseData[cell.value] || "");
         }
         return new TableCell({
-          children: [new Paragraph(value)],
+          children: [new Paragraph({
+            children: [new TextRun({ 
+              text: value,
+              bold: cell.bold,
+              italics: cell.italic,
+              size: (cell.fontSize || 12) * 2,
+              color: cell.textColor ? cell.textColor.replace("#", "") : undefined
+            })]
+          })],
           shading: cell.color ? { fill: cell.color.replace("#", "") } : undefined,
           columnSpan: cell.colspan || 1
         });
       })
     }));
 
+    const rows = [];
+    if (gridConfig.tableName) {
+      rows.push(new TableRow({
+        children: [new TableCell({
+          children: [new Paragraph({
+            children: [new TextRun({ text: gridConfig.tableName, bold: true, size: 28 })],
+            alignment: AlignmentType.CENTER
+          })],
+          columnSpan: gridConfig.headers.length,
+          shading: { fill: "e2e8f0" }
+        })]
+      }));
+    }
+
+    if (gridConfig.showHeaders !== false) {
+      rows.push(new TableRow({
+        children: gridConfig.headers.map(h => new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ 
+            text: h, 
+            bold: true,
+            color: gridConfig.headerTextColor ? gridConfig.headerTextColor.replace("#", "") : undefined
+          })] })],
+          shading: { fill: gridConfig.headerColor ? gridConfig.headerColor.replace("#", "") : "f1f5f9" }
+        }))
+      }));
+    }
+
     docRows.push(new Table({
-      rows: [headerRow, ...bodyRows],
+      rows: [...rows, ...bodyRows],
       width: { size: 100, type: WidthType.PERCENTAGE }
     }));
 
@@ -421,14 +464,28 @@ export function generatePdf(formTitle: string, responseData: any, customText?: s
     }
 
     const colWidth = 170 / gridConfig.headers.length;
-    doc.setFontSize(10);
-    doc.setFillColor(241, 245, 249);
-    doc.rect(20, y, 170, 10, 'F');
-    gridConfig.headers.forEach((h, i) => {
+    
+    if (gridConfig.tableName) {
+      doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text(h, 22 + (i * colWidth), y + 7);
-    });
-    y += 10;
+      doc.setFillColor(226, 232, 240);
+      doc.rect(20, y, 170, 10, 'F');
+      doc.text(gridConfig.tableName, 105, y + 7, { align: "center" });
+      y += 10;
+    }
+
+    if (gridConfig.showHeaders !== false) {
+      doc.setFontSize(10);
+      doc.setFillColor(gridConfig.headerColor || "#f1f5f9");
+      doc.rect(20, y, 170, 10, 'F');
+      doc.setTextColor(gridConfig.headerTextColor || "#000000");
+      gridConfig.headers.forEach((h, i) => {
+        doc.setFont("helvetica", "bold");
+        doc.text(h, 22 + (i * colWidth), y + 7);
+      });
+      y += 10;
+    }
+    doc.setTextColor("#000000");
 
     gridConfig.rows.forEach(row => {
       let maxHeight = 10;
@@ -447,15 +504,22 @@ export function generatePdf(formTitle: string, responseData: any, customText?: s
           doc.setFillColor(cell.color);
           doc.rect(currentX, y, cellWidth, maxHeight, 'F');
         }
-        if (row.isFooter) {
-          doc.setFont("helvetica", "bold");
-        } else {
-          doc.setFont("helvetica", "normal");
-        }
+        doc.setTextColor(cell.textColor || "#000000");
+        doc.setFontSize(cell.fontSize || 10);
+        
+        let style = "normal";
+        if (cell.bold && cell.italic) style = "bolditalic";
+        else if (cell.bold) style = "bold";
+        else if (cell.italic) style = "italic";
+        else if (row.isFooter) style = "bold";
+        
+        doc.setFont("helvetica", style);
+        
         let val = cell.type === "variable" ? String(responseData[cell.value] || "") : cell.value;
         doc.text(doc.splitTextToSize(val, cellWidth - 4), currentX + 2, y + 7);
         currentX += cellWidth;
       });
+      doc.setTextColor("#000000");
       y += maxHeight;
     });
 
