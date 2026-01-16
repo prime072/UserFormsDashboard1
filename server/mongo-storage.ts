@@ -214,7 +214,8 @@ export class MongoDBStorage implements IStorage {
       updatedAt: new Date(),
     } as any;
     const doc = await FormModel.create(newForm);
-    const { _id, ...rest } = (doc.toObject() as any);
+    const rest = (doc as any).toObject ? (doc as any).toObject() : (doc as any)[0].toObject();
+    delete rest._id;
     return rest as Form;
   }
 

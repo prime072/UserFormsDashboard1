@@ -102,6 +102,13 @@ export class DatabaseStorage implements IStorage {
 // Use MongoDB if MONGODB_URI is set, otherwise use PostgreSQL
 import { mongoStorage } from "./mongo-storage";
 
+// Ensure MongoDB is connected if URI is provided
+if (process.env.MONGODB_URI) {
+  mongoStorage.connect().catch(err => {
+    console.error("Failed to connect to MongoDB on startup:", err);
+  });
+}
+
 const storage = process.env.MONGODB_URI ? mongoStorage : new DatabaseStorage();
 
 export { storage };

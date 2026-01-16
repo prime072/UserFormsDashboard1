@@ -404,14 +404,11 @@ export function FormProvider({ children }: { children: ReactNode }) {
       let targetResponse;
       if (lookupConfig.lookupType === "first") {
         const offset = lookupConfig.nthIndex || 0;
-        // data is desc (newest first), so first submitted is at end
-        // first(0) -> data[length-1]
-        // first(1) -> data[length-2]
+        // First row is the last in the array (sorted by submittedAt desc)
         targetResponse = data[data.length - 1 - offset];
       } else if (lookupConfig.lookupType === "last") {
         const offset = lookupConfig.nthIndex || 0;
-        // last(0) -> data[0]
-        // last(1) -> data[1]
+        // Last row is the first in the array (sorted by submittedAt desc)
         targetResponse = data[offset];
       } else if (lookupConfig.lookupType === "nth") {
         const index = lookupConfig.nthIndex || 1;

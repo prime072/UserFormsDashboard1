@@ -65,8 +65,6 @@ export default function SubmissionConfirmation() {
     );
   const data = response.data;
   const grid = form.gridConfig;
-  /*
-  
   useEffect(() => {
     const fetchLookups = async () => {
       if (!grid) return;
@@ -83,7 +81,6 @@ export default function SubmissionConfirmation() {
     };
     if (grid) fetchLookups();
   }, [grid, resolveLookup]);
-*/
   const replaceVars = (text: string) => {
     let result = text || "";
     Object.entries(data).forEach(([key, val]) => {
