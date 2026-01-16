@@ -68,8 +68,16 @@ export default function SubmissionConfirmation() {
         Not Found
       </div>
     );
+
+  return <SubmissionConfirmationContent form={form} response={response} resolveLookup={resolveLookup} />;
+}
+
+function SubmissionConfirmationContent({ form, response, resolveLookup }: { form: any, response: any, resolveLookup: any }) {
+  const [resolvedLookups, setResolvedLookups] = useState<Record<string, string>>({});
+  const [, setLocation] = useLocation();
   const data = response.data;
   const grid = form.gridConfig;
+
   useEffect(() => {
     const fetchLookups = async () => {
       if (!grid || !grid.rows) return;
@@ -90,8 +98,9 @@ export default function SubmissionConfirmation() {
       }
       setResolvedLookups(lookups);
     };
-    if (grid) fetchLookups();
+    fetchLookups();
   }, [grid, resolveLookup]);
+
   const replaceVars = (text: string) => {
     let result = text || "";
     Object.entries(data).forEach(([key, val]) => {
