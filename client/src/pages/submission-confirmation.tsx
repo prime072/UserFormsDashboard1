@@ -82,24 +82,58 @@ function SubmissionConfirmationContent({ form, response, resolveLookup }: { form
     const fetchLookups = async () => {
       if (!grid || !grid.rows) return;
       const lookups: Record<string, string> = {};
-      for (const row of grid.rows) {
-        if (!row.cells) continue;
-        for (const cell of row.cells) {
-          if (cell.type === "lookup" && cell.lookupConfig) {
-            try {
-              const val = await resolveLookup(cell.lookupConfig);
-              lookups[cell.id] = val;
-            } catch (err) {
-              console.error(`Error resolving lookup for cell ${cell.id}:`, err);
-              lookups[cell.id] = "Error";
-            }
+      const allCells: any[] = [];
+      grid.rows.forEach((r: any) => r.cells.forEach((c: any) => allCells.push(c)));
+
+      // First pass: Resolve lookups
+      for (const cell of allCells) {
+        if (cell.type === "lookup" && cell.lookupConfig) {
+          try {
+            const val = await resolveLookup(cell.lookupConfig);
+            lookups[cell.id] = val;
+          } catch (err) {
+            lookups[cell.id] = "0";
           }
         }
       }
+
+      // Second pass: Resolve formulas
+      const resolveFormula = (expression: string): string => {
+        let evaluated = expression;
+        
+        // Replace variables {{Field}}
+        Object.entries(data).forEach(([key, val]) => {
+          evaluated = evaluated.replace(new RegExp(`{{${key}}}`, "g"), String(val || 0));
+        });
+
+        // Replace lookup references [[CellID]]
+        Object.entries(lookups).forEach(([id, val]) => {
+          evaluated = evaluated.replace(new RegExp(`\\[\\[${id}\\]\\]`, "g"), String(val || 0));
+        });
+
+        try {
+          // Basic math evaluation safely
+          // Remove any non-math characters for security
+          const cleanExpr = evaluated.replace(/[^0-9+\-*/().\s]/g, "");
+          const result = eval(cleanExpr);
+          return isNaN(result) ? "0" : String(result);
+        } catch (e) {
+          return "0";
+        }
+      };
+
+      for (const cell of allCells) {
+        if (cell.type === "formula" && cell.formulaConfig) {
+          const rawVal = resolveFormula(cell.formulaConfig.expression);
+          const precision = cell.formulaConfig.precision ?? 2;
+          lookups[cell.id] = parseFloat(rawVal).toFixed(precision);
+        }
+      }
+
       setResolvedLookups(lookups);
     };
     fetchLookups();
-  }, [grid, resolveLookup]);
+  }, [grid, resolveLookup, data]);
 
   const replaceVars = (text: string) => {
     let result = text || "";
@@ -177,7 +211,7 @@ function SubmissionConfirmationContent({ form, response, resolveLookup }: { form
                             let val = cell.value;
                             if (cell.type === "variable") {
                               val = String(data[cell.value] || "");
-                            } else if (cell.type === "lookup") {
+                            } else if (cell.type === "lookup" || cell.type === "formula") {
                               val = resolvedLookups[cell.id] || "Loading...";
                             }
                             return (
@@ -245,6 +279,7 @@ function SubmissionConfirmationContent({ form, response, resolveLookup }: { form
                     undefined,
                     form.gridConfig,
                     resolveLookup,
+                    resolvedLookups
                   )
                 }
               >
@@ -261,6 +296,7 @@ function SubmissionConfirmationContent({ form, response, resolveLookup }: { form
                     undefined,
                     form.gridConfig,
                     resolveLookup,
+                    resolvedLookups
                   )
                 }
               >
@@ -279,6 +315,7 @@ function SubmissionConfirmationContent({ form, response, resolveLookup }: { form
                     form.whatsappFormat,
                     form.gridConfig,
                     resolveLookup,
+                    resolvedLookups
                   );
                   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
                 }}

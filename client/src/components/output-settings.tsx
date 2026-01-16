@@ -283,12 +283,13 @@ export default function OutputSettings({
                           <div className="flex gap-1 items-center">
                             <select 
                               value={cell.type}
-                              onChange={(e) => updateCell(rIndex, cIndex, { type: e.target.value as "text" | "variable" | "lookup" })}
+                              onChange={(e) => updateCell(rIndex, cIndex, { type: e.target.value as "text" | "variable" | "lookup" | "formula" })}
                               className="h-6 text-[10px] rounded border"
                             >
                               <option value="text">Txt</option>
                               <option value="variable">Var</option>
                               <option value="lookup">Lkp</option>
+                              <option value="formula">Fx</option>
                             </select>
                             <Input 
                               type="color"
@@ -440,6 +441,37 @@ export default function OutputSettings({
                                   )}
                                 </>
                               )}
+                            </div>
+                          ) : cell.type === "formula" ? (
+                            <div className="space-y-1">
+                              <Input 
+                                placeholder="Formula (e.g. {{A}} + {{B}})"
+                                value={cell.formulaConfig?.expression || ""}
+                                onChange={(e) => updateCell(rIndex, cIndex, { 
+                                  formulaConfig: { 
+                                    ...(cell.formulaConfig || { expression: "", precision: 2 }), 
+                                    expression: e.target.value 
+                                  } 
+                                })}
+                                className="h-7 text-xs"
+                              />
+                              <div className="flex items-center gap-1">
+                                <Label className="text-[9px]">Prec:</Label>
+                                <Input 
+                                  type="number"
+                                  min="0"
+                                  max="10"
+                                  value={cell.formulaConfig?.precision ?? 2}
+                                  onChange={(e) => updateCell(rIndex, cIndex, { 
+                                    formulaConfig: { 
+                                      ...(cell.formulaConfig || { expression: "", precision: 2 }), 
+                                      precision: parseInt(e.target.value) 
+                                    } 
+                                  })}
+                                  className="h-7 text-xs w-12"
+                                />
+                              </div>
+                              <p className="text-[8px] text-slate-400">Use {'{{Field}}'} or {'[[CellID]]'}</p>
                             </div>
                           ) : (
                             <Input 

@@ -44,8 +44,12 @@ export interface FormField {
 
 export interface FormTableCell {
   id: string;
-  type: "text" | "variable" | "lookup";
+  type: "text" | "variable" | "lookup" | "formula";
   value: string;
+  formulaConfig?: {
+    expression: string;
+    precision?: number;
+  };
   lookupConfig?: {
     formId: string;
     fieldId: string;
@@ -469,6 +473,7 @@ export async function generateDocx(
   customText?: string,
   gridConfig?: GridConfig,
   resolveLookup?: (config: any) => Promise<string>,
+  resolvedPreFetched?: Record<string, string>,
 ) {
   const docRows = [];
 
@@ -485,8 +490,14 @@ export async function generateDocx(
             let value = cell.value;
             if (cell.type === "variable") {
               value = String(responseData[cell.value] || "");
-            } else if (cell.type === "lookup" && cell.lookupConfig && resolveLookup) {
-              value = await resolveLookup(cell.lookupConfig);
+            } else if (cell.type === "lookup" || cell.type === "formula") {
+              if (resolvedPreFetched && resolvedPreFetched[cell.id]) {
+                value = resolvedPreFetched[cell.id];
+              } else if (cell.type === "lookup" && cell.lookupConfig && resolveLookup) {
+                value = await resolveLookup(cell.lookupConfig);
+              } else {
+                value = "0";
+              }
             }
             return new TableCell({
               children: [
@@ -642,6 +653,7 @@ export async function generatePdf(
   customText?: string,
   gridConfig?: GridConfig,
   resolveLookup?: (config: any) => Promise<string>,
+  resolvedPreFetched?: Record<string, string>,
 ) {
   const doc = new jsPDF();
   doc.setFontSize(20);
@@ -690,8 +702,14 @@ export async function generatePdf(
         let val = cell.value;
         if (cell.type === "variable") {
           val = String(responseData[cell.value] || "");
-        } else if (cell.type === "lookup" && cell.lookupConfig && resolveLookup) {
-          val = await resolveLookup(cell.lookupConfig);
+        } else if (cell.type === "lookup" || cell.type === "formula") {
+          if (resolvedPreFetched && resolvedPreFetched[cell.id]) {
+            val = resolvedPreFetched[cell.id];
+          } else if (cell.type === "lookup" && cell.lookupConfig && resolveLookup) {
+            val = await resolveLookup(cell.lookupConfig);
+          } else {
+            val = "0";
+          }
         }
         return val;
       }));
@@ -771,6 +789,7 @@ export async function generateWhatsAppShareMessage(
   customFormat?: string,
   gridConfig?: GridConfig,
   resolveLookup?: (config: any) => Promise<string>,
+  resolvedPreFetched?: Record<string, string>,
 ): Promise<string> {
   if (customFormat) {
     let message = customFormat;
@@ -786,12 +805,19 @@ export async function generateWhatsAppShareMessage(
   if (gridConfig && gridConfig.rows.length > 0) {
     const rowStrings = await Promise.all(gridConfig.rows.map(async (row) => {
       const cellStrings = await Promise.all(row.cells.map(async (cell) => {
+        let val = cell.value;
         if (cell.type === "variable") {
-          return String(responseData[cell.value] || "");
-        } else if (cell.type === "lookup" && cell.lookupConfig && resolveLookup) {
-          return await resolveLookup(cell.lookupConfig);
+          val = String(responseData[cell.value] || "");
+        } else if (cell.type === "lookup" || cell.type === "formula") {
+          if (resolvedPreFetched && resolvedPreFetched[cell.id]) {
+            val = resolvedPreFetched[cell.id];
+          } else if (cell.type === "lookup" && cell.lookupConfig && resolveLookup) {
+            val = await resolveLookup(cell.lookupConfig);
+          } else {
+            val = "0";
+          }
         }
-        return cell.value;
+        return val;
       }));
       return cellStrings.join(" : ");
     }));
