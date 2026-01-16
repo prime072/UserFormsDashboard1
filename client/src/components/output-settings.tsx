@@ -306,6 +306,10 @@ export default function OutputSettings({
                               title="Text Color"
                             />
                             <div className="flex items-center gap-1 border rounded px-1 h-6">
+                              <span className="text-[9px] text-slate-400">ID:</span>
+                              <span className="text-[9px] font-mono select-all bg-slate-100 px-1 rounded">{cell.id}</span>
+                            </div>
+                            <div className="flex items-center gap-1 border rounded px-1 h-6">
                               <button 
                                 className={`text-[10px] px-1 font-bold ${cell.bold ? 'bg-primary text-white' : ''}`}
                                 onClick={() => updateCell(rIndex, cIndex, { bold: !cell.bold })}
