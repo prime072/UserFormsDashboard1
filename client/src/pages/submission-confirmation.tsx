@@ -24,6 +24,10 @@ export default function SubmissionConfirmation() {
   const [form, setForm] = useState<any>(null);
   const [response, setResponse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [resolvedLookups, setResolvedLookups] = useState<
+    Record<string, string>
+  >({});
+  const { resolveLookup } = useForms();
 
   const formId = params?.id;
   const submissionId = params?.submissionId;
@@ -53,16 +57,16 @@ export default function SubmissionConfirmation() {
         Loading...
       </div>
     );
-  if (!form || !response) return <div>Not found</div>;
+  if (!form || !response)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Not Found
+      </div>
+    );
   const data = response.data;
   const grid = form.gridConfig;
-
-  const [resolvedLookups, setResolvedLookups] = useState<
-    Record<string, string>
-  >({});
-
-  const { resolveLookup } = useForms();
-
+  /*
+  
   useEffect(() => {
     const fetchLookups = async () => {
       if (!grid) return;
@@ -79,7 +83,7 @@ export default function SubmissionConfirmation() {
     };
     if (grid) fetchLookups();
   }, [grid, resolveLookup]);
-
+*/
   const replaceVars = (text: string) => {
     let result = text || "";
     Object.entries(data).forEach(([key, val]) => {
