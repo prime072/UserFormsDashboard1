@@ -39,9 +39,14 @@ export default function SubmissionConfirmation() {
           fetch(`/api/forms/${formId}`),
           fetch(`/api/responses/${submissionId}`),
         ]);
-        if (formRes.ok)
-          setForm((await formRes.ok) ? await formRes.json() : null);
-        if (responseRes.ok) setResponse(await responseRes.json());
+        if (formRes.ok) {
+          const formData = await formRes.json();
+          setForm(formData);
+        }
+        if (responseRes.ok) {
+          const resData = await responseRes.json();
+          setResponse(resData);
+        }
       } catch (error) {
         console.error(error);
       } finally {
@@ -67,13 +72,19 @@ export default function SubmissionConfirmation() {
   const grid = form.gridConfig;
   useEffect(() => {
     const fetchLookups = async () => {
-      if (!grid) return;
+      if (!grid || !grid.rows) return;
       const lookups: Record<string, string> = {};
       for (const row of grid.rows) {
+        if (!row.cells) continue;
         for (const cell of row.cells) {
           if (cell.type === "lookup" && cell.lookupConfig) {
-            const val = await resolveLookup(cell.lookupConfig);
-            lookups[cell.id] = val;
+            try {
+              const val = await resolveLookup(cell.lookupConfig);
+              lookups[cell.id] = val;
+            } catch (err) {
+              console.error(`Error resolving lookup for cell ${cell.id}:`, err);
+              lookups[cell.id] = "Error";
+            }
           }
         }
       }
