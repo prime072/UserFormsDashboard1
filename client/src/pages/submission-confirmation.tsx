@@ -103,21 +103,27 @@ function SubmissionConfirmationContent({ form, response, resolveLookup }: { form
         
         // Replace variables {{Field}}
         Object.entries(data).forEach(([key, val]) => {
-          evaluated = evaluated.replace(new RegExp(`{{${key}}}`, "g"), String(val || 0));
+          // Ensure we treat numeric strings as numbers in eval
+          const numericVal = isNaN(Number(val)) ? 0 : Number(val);
+          evaluated = evaluated.replace(new RegExp(`{{${key}}}`, "g"), String(numericVal));
         });
 
         // Replace lookup references [[CellID]]
         Object.entries(lookups).forEach(([id, val]) => {
-          evaluated = evaluated.replace(new RegExp(`\\[\\[${id}\\]\\]`, "g"), String(val || 0));
+          const numericVal = isNaN(Number(val)) ? 0 : Number(val);
+          evaluated = evaluated.replace(new RegExp(`\\[\\[${id}\\]\\]`, "g"), String(numericVal));
         });
 
         try {
           // Basic math evaluation safely
           // Remove any non-math characters for security
           const cleanExpr = evaluated.replace(/[^0-9+\-*/().\s]/g, "");
-          const result = eval(cleanExpr);
-          return isNaN(result) ? "0" : String(result);
+          if (!cleanExpr) return "0";
+          
+          const result = Function(`"use strict"; return (${cleanExpr})`)();
+          return isNaN(result) || !isFinite(result) ? "0" : String(result);
         } catch (e) {
+          console.error("Formula eval error:", e);
           return "0";
         }
       };
