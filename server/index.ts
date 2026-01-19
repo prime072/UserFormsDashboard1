@@ -4,7 +4,8 @@ import { registerPrivateUserRoutes } from "./private-user-routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 
-const app = express();
+
+export const app = express();
 const httpServer = createServer(app);
 
 declare module "http" {
