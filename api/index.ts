@@ -1,19 +1,33 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import express, { type Request, Response, NextFunction } from "express";
+import { registerRoutes } from "../server/routes";
+import { registerPrivateUserRoutes } from "../server/private-user-routes";
+import { createServer } from "http";
 
-export default function handler(
-  req: VercelRequest,
-  res: VercelResponse
-) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+const app = express();
+const httpServer = createServer(app);
 
-  const { email, password } = req.body;
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-  // TEMP CHECK (replace later with DB)
-  if (email === 'admin@test.com' && password === '1234') {
-    return res.status(200).json({ success: true });
-  }
+let routesRegistered = false;
 
-  return res.status(401).json({ success: false, message: 'Invalid credentials' });
+async function initializeApp() {
+  if (routesRegistered) return;
+  // We don't need the return value from registerRoutes for the Vercel function
+  await registerRoutes(httpServer, app);
+  registerPrivateUserRoutes(app);
+  
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    res.status(status).json({ message });
+  });
+  
+  routesRegistered = true;
 }
+
+export default async (req: Request, res: Response) => {
+  await initializeApp();
+  // Vercel's express support handles the req/res routing automatically when passing to app
+  return app(req, res);
+};
