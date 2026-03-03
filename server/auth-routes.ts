@@ -46,7 +46,7 @@ export function registerAuthRoutes(app: Express) {
 
       res.status(201).json({
         id: newUser.id,
-        email: newUser.email,
+        email: (newUser as any).email || newUser.username,
         firstName: (newUser as any).firstName || "",
         lastName: (newUser as any).lastName || "",
         phone: (newUser as any).phone || "",
@@ -86,7 +86,7 @@ export function registerAuthRoutes(app: Express) {
 
       res.json({
         id: responseUser.id,
-        email: responseUser.email,
+        email: (responseUser as any).email || responseUser.username,
         firstName: responseUser.firstName,
         lastName: responseUser.lastName,
         phone: responseUser.phone,
